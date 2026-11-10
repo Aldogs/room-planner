@@ -1,0 +1,1935 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Aldo's Room Planner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one-screen drafting desk. Plan on the left, walkable room in the middle, checks on the right.
+   Palette comes from the room itself: mustard throw, monstera green, espresso furniture, cool grey walls. */
+:root {
+  --bg: #e7e8e1; --panel: #f7f7f2; --raised: #ffffff; --ink: #24271f; --muted: #646a5c; --line: #d3d5ca;
+  --accent: #d6a01f; --accent-soft: #f3e2b3; --accent-ink: #2b2000; --leaf: #2f6b46; --leaf-soft: #dcebdf;
+  --warn: #a85c10; --warn-soft: #f8e6d0; --bad: #ad3226; --bad-soft: #f7dcd8;
+  --wall: #34372f; --plan-floor: #fbfaf5; --plan-item: #ece9dd; --plan-rug: #e9dfc8; --stage: #d6d8cf;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Figtree", "Helvetica Neue", system-ui, sans-serif;
+  --mono: "DM Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141611; --panel: #1d201a; --raised: #282c24; --ink: #ecede4; --muted: #a2a797; --line: #363a30;
+  --accent: #e2ad2d; --accent-soft: #4b3a10; --accent-ink: #231a00; --leaf: #7cc494; --leaf-soft: #20382a;
+  --warn: #eba65a; --warn-soft: #43301a; --bad: #f08c7f; --bad-soft: #4a2420;
+  --wall: #c9ccbf; --plan-floor: #23261f; --plan-item: #33372d; --plan-rug: #3a3626; --stage: #1a1c17; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141611; --panel: #1d201a; --raised: #282c24; --ink: #ecede4; --muted: #a2a797; --line: #363a30;
+  --accent: #e2ad2d; --accent-soft: #4b3a10; --accent-ink: #231a00; --leaf: #7cc494; --leaf-soft: #20382a;
+  --warn: #eba65a; --warn-soft: #43301a; --bad: #f08c7f; --bad-soft: #4a2420;
+  --wall: #c9ccbf; --plan-floor: #23261f; --plan-item: #33372d; --plan-rug: #3a3626; --stage: #1a1c17; color-scheme: dark }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 14px; line-height: 1.4; }
+* { box-sizing: border-box; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 10px;
+  padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* top bar */
+.top { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 10px; flex: none; }
+.mark { width: 36px; height: 36px; border-radius: 9px; background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center; font: 700 20px var(--display); }
+.brand h1 { font: 700 18px/1.1 var(--display); margin: 0; letter-spacing: -.01em; }
+.brand p { margin: 1px 0 0; font: 400 11.5px var(--mono); color: var(--muted); }
+.tabs { display: flex; gap: 6px; flex: 1; justify-content: safe center; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 2px; }
+.tab { flex: none; padding: 7px 13px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); font-weight: 600; font-size: 13px; }
+.tab:hover { border-color: var(--muted); }
+.tab[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tab small { font: 500 10.5px var(--mono); margin-left: 6px; padding: 1px 6px; border-radius: 99px; background: var(--accent); color: var(--accent-ink); }
+.top-actions { display: flex; gap: 6px; flex: none; }
+.icon-btn { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 9px; background: var(--panel); border: 1px solid var(--line); }
+.icon-btn:hover:not(:disabled) { border-color: var(--muted); }
+.icon-btn:disabled { opacity: .4; cursor: default; }
+.icon-btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.icon-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.btn { padding: 7px 13px; border-radius: 9px; background: var(--raised); border: 1px solid var(--line); font-weight: 600; font-size: 13px; }
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.danger { color: var(--bad); }
+.btn:disabled { opacity: .45; cursor: default; }
+
+/* three columns */
+.desk { display: grid; grid-template-columns: minmax(340px, 31%) minmax(0, 1fr) 306px; gap: 10px; min-height: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.plan { display: flex; flex-direction: column; min-height: 0; padding: 12px; position: relative; }
+.plan-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.plan-head h2 { font: 700 15px var(--display); margin: 0; }
+.plan-head p { margin: 0; font-size: 12px; color: var(--muted); }
+.plan-tools { display: flex; gap: 5px; flex: none; }
+.plan-tools .icon-btn { width: 31px; height: 31px; border-radius: 8px; }
+#plan { flex: 1; min-height: 0; width: 100%; display: block; margin-top: 4px; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
+.desk.plan-max { grid-template-columns: minmax(0, 1fr) 306px; }
+.desk.plan-max .view { display: none; }
+
+/* svg plan */
+.p-wall { fill: var(--wall); }
+.p-floor { fill: var(--plan-floor); }
+.p-dim { stroke: var(--muted); stroke-width: .7; fill: none; }
+.p-txt { font: 500 9px var(--mono); fill: var(--muted); }
+.p-lbl { font: 500 8.6px var(--mono); fill: var(--muted); letter-spacing: .08em; }
+.p-swing { fill: var(--accent-soft); fill-opacity: .55; stroke: var(--muted); stroke-width: .6; stroke-dasharray: 3 2; }
+.p-win { fill: var(--plan-floor); stroke: var(--wall); stroke-width: .8; }
+.p-park { fill: none; stroke: var(--muted); stroke-width: .8; stroke-dasharray: 5 4; }
+.p-zone { fill: var(--accent-soft); fill-opacity: .4; stroke: var(--muted); stroke-width: .5; stroke-dasharray: 3 3; pointer-events: none; }
+.pi { cursor: grab; touch-action: none; }
+.pi.dragging { cursor: grabbing; }
+.pi .b { fill: var(--plan-item); stroke: var(--ink); stroke-width: .9; }
+.pi.rug .b { fill: var(--plan-rug); stroke: var(--muted); stroke-dasharray: 2 2; }
+.pi .d { fill: none; stroke: var(--ink); stroke-width: .6; opacity: .55; }
+.pi .b.hb { fill: var(--ink); }
+.pi .f { fill: var(--accent); opacity: .85; }
+.pi .g { fill: var(--leaf); opacity: .75; }
+.pi.sel .b { stroke: var(--accent); stroke-width: 2.4; }
+.pi.bad .b { stroke: var(--bad); stroke-width: 1.8; }
+.pi-t { font: 600 8.2px var(--body); fill: var(--ink); text-anchor: middle; pointer-events: none; }
+.pi-s { font: 400 6.8px var(--mono); fill: var(--muted); text-anchor: middle; pointer-events: none; }
+.p-group { fill: none; stroke: var(--accent); stroke-width: 1; stroke-dasharray: 5 3; pointer-events: none; }
+.p-handle { fill: var(--accent); stroke: var(--raised); stroke-width: 1.4; cursor: grab; touch-action: none; }
+
+/* 3D stage */
+.view { position: relative; overflow: hidden; background: var(--stage); min-height: 0; }
+#stage { position: absolute; inset: 0; touch-action: none; outline: none; }
+#stage canvas { display: block; width: 100%; height: 100%; }
+.seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); }
+.seg button { padding: 5px 11px; border-radius: 7px; font-weight: 600; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.hud { position: absolute; display: flex; gap: 6px; flex-wrap: wrap; z-index: 2; }
+.hud.tl { top: 10px; left: 10px; flex-direction: column; align-items: flex-start; }
+.hud.tr { top: 10px; right: 10px; justify-content: flex-end; }
+.view { container-type: inline-size; }
+@container (max-width: 620px) {
+  .hud.tr { flex-direction: column-reverse; align-items: flex-end; }
+  #spotSeg { margin-top: 40px; }
+}
+.hint { position: absolute; right: 10px; bottom: 10px; max-width: min(320px, 70%); padding: 7px 11px; border-radius: 9px; font-size: 12px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent); border: 1px solid var(--line); z-index: 2; }
+.hint kbd { font: 500 11px var(--mono); padding: 0 4px; border: 1px solid var(--line); border-radius: 4px; background: var(--raised); }
+.pad { position: absolute; left: 12px; bottom: 12px; display: none; grid-template-columns: repeat(3, 44px); grid-auto-rows: 44px; gap: 4px; z-index: 2; touch-action: none; }
+.pad button { background: color-mix(in srgb, var(--panel) 85%, transparent); border: 1px solid var(--line); border-radius: 10px; font-size: 16px; touch-action: none; }
+.pad .u { grid-column: 2; } .pad .l { grid-column: 1; grid-row: 2; } .pad .d { grid-column: 2; grid-row: 2; } .pad .r { grid-column: 3; grid-row: 2; }
+.walking.touch .pad { display: grid; }
+.fail { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; color: var(--muted); }
+
+/* right column */
+.side { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; padding-right: 2px; scrollbar-width: thin; }
+.card { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.eyebrow { font: 500 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.card h3 { font: 700 16px/1.2 var(--display); margin: 0; text-wrap: balance; }
+.card p { margin: 0; }
+.lede { font-size: 13px; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.stat { padding: 6px 8px; background: var(--raised); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+.stat b { display: block; font: 500 15px var(--mono); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 11px; color: var(--muted); }
+.notes, .checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+.notes li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 6px; }
+.notes i { font-style: normal; width: 16px; height: 16px; margin-top: 1px; border-radius: 5px; display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+.notes .ok { background: var(--leaf-soft); color: var(--leaf); }
+.notes .no { background: var(--warn-soft); color: var(--warn); }
+.check { width: 100%; text-align: left; padding: 6px 9px; border-radius: 8px; font-size: 13px; background: var(--warn-soft); color: var(--ink); display: grid; grid-template-columns: 9px minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.check::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+.check.bad { background: var(--bad-soft); }
+.check.bad::before { background: var(--bad); }
+.clear { padding: 6px 9px; border-radius: 8px; background: var(--leaf-soft); font-size: 13px; }
+.row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px; align-items: center; font-size: 13px; min-height: 30px; }
+.row label, .row > span:first-child { color: var(--muted); }
+.row .val { display: flex; align-items: center; gap: 8px; min-width: 0; justify-content: flex-end; }
+.row output { font: 400 12px var(--mono); width: 38px; text-align: right; flex: none; }
+input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
+.field { width: 100%; padding: 6px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--raised); min-width: 0; }
+.dims { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.dims label { font: 400 10.5px var(--mono); color: var(--muted); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dims input { font: 400 13px var(--mono); padding: 5px 6px; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.actions .btn { padding: 6px 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { padding: 4px 9px; border-radius: 99px; border: 1px solid var(--line); background: var(--raised); font-size: 12.5px; }
+.chip:hover { border-color: var(--muted); }
+.save { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+.saved { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.saved li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+.saved .open { text-align: left; padding: 5px 8px; border-radius: 7px; background: var(--raised); border: 1px solid var(--line); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.saved .open:hover { border-color: var(--muted); }
+.muted { color: var(--muted); font-size: 12.5px; }
+.grid-wrap { overflow-x: auto; }
+#compare { width: 100%; border-collapse: separate; border-spacing: 3px; table-layout: fixed; }
+#compare th { font: 500 10.5px/1.2 var(--mono); color: var(--muted); font-weight: 500; padding: 2px; vertical-align: bottom; }
+#compare thead th:first-child, #compare tbody th { width: 40px; text-align: left; }
+#compare td { padding: 0; }
+.cell { width: 100%; padding: 4px 2px; border-radius: 7px; display: flex; flex-direction: column; align-items: center; border: 2px solid transparent; }
+.cell b { font: 500 14px var(--mono); font-variant-numeric: tabular-nums; }
+.cell span { font-size: 10.5px; color: var(--muted); }
+.cell.good { background: var(--leaf-soft); }
+.cell.warn { background: var(--warn-soft); }
+.cell.bad { background: var(--bad-soft); }
+.cell:hover { border-color: var(--muted); }
+.cell[aria-pressed="true"] { border-color: var(--ink); }
+.dims.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+dialog#ask { margin: auto; width: min(380px, calc(100vw - 32px)); padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); }
+dialog#ask::backdrop { background: rgba(10, 12, 8, .55); }
+dialog#ask h3 { font: 700 17px/1.25 var(--display); margin: 0 0 6px; overflow-wrap: anywhere; }
+#askInput { margin-bottom: 16px; }
+dialog#ask p { margin: 0 0 16px; color: var(--muted); font-size: 13.5px; }
+.ask-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.btn.danger-fill { background: var(--bad); border-color: var(--bad); color: var(--panel); }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 9px; font-size: 13px; z-index: 20; max-width: calc(100vw - 32px); }
+
+@media (max-width: 1120px) {
+  html, body { height: auto; }
+  .app { height: auto; }
+  .desk, .desk.plan-max { grid-template-columns: minmax(0, 1fr); }
+  .view { order: -1; height: 62vh; min-height: 340px; display: block !important; }
+  .plan { height: auto; }
+  #plan { height: auto; aspect-ratio: 460 / 648; flex: none; }
+  .side { overflow: visible; }
+  .top { flex-wrap: wrap; }
+  .tabs { order: 3; flex-basis: 100%; justify-content: flex-start; }
+  .brand { flex: 1; min-width: 0; }
+  #maxPlan { display: none; }
+}
+@media (max-width: 480px) {
+  .mark { display: none; }
+  .brand { flex: 1 1 100%; }
+  .top-actions { width: 100%; }
+  #share { margin-left: auto; }
+  .brand h1, .brand p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #share { padding: 7px 9px; font-size: 12px; }
+  .seg button { padding: 5px 8px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">A</div>
+      <div><h1>Aldo's room</h1><p id="subtitle">380 × 370 cm</p></div>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Layouts"></nav>
+    <div class="top-actions">
+      <div class="seg" id="langSeg" role="group" aria-label="Language"><button data-v="en" title="English">EN</button><button data-v="es" title="Español">ES</button></div>
+      <button class="icon-btn" id="undo" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 7 4 12l5 5"/><path d="M4 12h11a5 5 0 0 1 0 10h-2"/></svg></button>
+      <button class="icon-btn" id="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="m15 7 5 5-5 5"/><path d="M20 12H9a5 5 0 0 0 0 10h2"/></svg></button>
+      <button class="btn primary" id="share" title="Copies a written summary of this layout">Copy summary</button>
+    </div>
+  </header>
+
+  <main class="desk" id="desk">
+    <section class="panel plan" aria-label="Floor plan">
+      <div class="plan-head">
+        <div><h2>Floor plan</h2><p>Drag to move. Double-click to rename. Cmd + click selects several.</p></div>
+        <div class="plan-tools">
+          <button class="icon-btn" id="snap" aria-pressed="true" title="Snap to 5 cm and to walls" aria-label="Snap to grid and walls"><svg viewBox="0 0 24 24"><path d="M6 4v9a6 6 0 0 0 12 0V4h-4v9a2 2 0 0 1-4 0V4z"/><path d="M6 8h4M14 8h4"/></svg></button>
+          <button class="icon-btn" id="zones" aria-pressed="true" title="Show the space furniture needs in front of it" aria-label="Show clearance zones"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1" stroke-dasharray="3 3"/><rect x="8" y="8" width="8" height="8"/></svg></button>
+          <button class="icon-btn" id="maxPlan" aria-pressed="false" title="Enlarge the plan" aria-label="Enlarge the plan"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        </div>
+      </div>
+      <svg id="plan" viewBox="-36 -104 460 648" preserveAspectRatio="xMidYMin meet" role="application" aria-label="Draggable floor plan, 380 by 370 centimetres"></svg>
+    </section>
+
+    <section class="panel view" id="view" aria-label="3D view">
+      <div id="stage" tabindex="0" aria-label="3D room. In walk mode use W A S D to walk and the arrow keys to look around."></div>
+      <div class="hud tl">
+        <div class="seg" id="modeSeg">
+          <button data-v="orbit">Outside view</button>
+          <button data-v="walk">Walk the room</button>
+        </div>
+        <div class="seg" id="spotSeg">
+          <button data-v="door">From the door</button>
+          <button data-v="window">From the window</button>
+          <button data-v="bed">From the bed</button>
+        </div>
+      </div>
+      <div class="hud tr">
+        <div class="seg">
+          <button id="blindBtn"></button>
+          <button id="doorBtn"></button>
+        </div>
+        <div class="seg" id="timeSeg">
+          <button data-v="day">Day</button>
+          <button data-v="evening">Evening</button>
+        </div>
+      </div>
+      <div class="pad" id="pad" aria-label="Walk controls">
+        <button class="u" data-k="KeyW" aria-label="Forward">↑</button>
+        <button class="l" data-k="KeyA" aria-label="Left">←</button>
+        <button class="d" data-k="KeyS" aria-label="Back">↓</button>
+        <button class="r" data-k="KeyD" aria-label="Right">→</button>
+      </div>
+      <div class="hint" id="hint"></div>
+    </section>
+
+    <aside class="side" aria-label="Layout details">
+      <section class="panel card">
+        <p class="eyebrow">Bed test</p>
+        <div class="row"><span>Bed frame</span><div class="val"><div class="seg" id="frameSeg">
+          <button data-v="current">Matrimonial</button><button data-v="queen">Queen</button><button data-v="king">King</button></div></div></div>
+        <div class="row"><span>Headboard</span><div class="val"><div class="seg" id="headSeg">
+          <button data-v="current">Current</button><button data-v="king">King</button><button data-v="none">None</button></div></div></div>
+        <div class="dims two" id="headDims">
+          <label>Headboard width<input class="field" id="headW" type="number" min="60" max="300" step="1"></label>
+          <label>Headboard height<input class="field" id="headH" type="number" min="30" max="240" step="1"></label>
+        </div>
+        <div class="grid-wrap"><table id="compare" aria-label="Every layout with every bed setup"></table></div>
+        <p class="muted">Each cell shows how much of the window stays clear and how many checks flag something. Red means something collides, orange a trade-off. Click a cell to load it.</p>
+      </section>
+
+      <section class="panel card">
+        <p class="eyebrow">Layout</p>
+        <h3 id="layName"></h3>
+        <p class="lede" id="layText"></p>
+        <div class="stats">
+          <div class="stat"><b id="stFree">–</b><span>free floor</span></div>
+          <div class="stat"><b id="stRoute">–</b><span>tightest route</span></div>
+          <div class="stat"><b id="stMoves">–</b><span>moves from today</span></div>
+          <div class="stat"><b id="stWin">–</b><span>window clear</span></div>
+        </div>
+        <ul class="notes" id="layNotes"></ul>
+      </section>
+
+      <section class="panel card">
+        <p class="eyebrow" id="chkTitle">Checks</p>
+        <div class="checks" id="checks"></div>
+      </section>
+
+      <section class="panel card" id="inspector" hidden>
+        <p class="eyebrow">Selected</p>
+        <p class="lede" id="selCount" hidden></p>
+        <input class="field" id="itName" aria-label="Item name">
+        <div class="dims">
+          <label>Width<input class="field" id="itW" type="number" min="5" max="400" step="1"></label>
+          <label>Depth<input class="field" id="itD" type="number" min="5" max="400" step="1"></label>
+          <label>Height<input class="field" id="itH" type="number" min="1" max="260" step="1"></label>
+          <label>Turn °<input class="field" id="itR" type="number" min="0" max="359" step="1"></label>
+        </div>
+        <div class="row" id="itYRow" hidden><label for="itY">Height from floor</label><div class="val"><input id="itY" type="range" min="0" max="220" step="1"><output id="itYO"></output></div></div>
+        <div class="actions">
+          <button class="btn" id="itTurn45" title="Shortcut: Shift + R">Turn 45°</button>
+          <button class="btn" id="itTurn" title="Shortcut: R">Turn 90°</button>
+          <button class="btn" id="itCopy">Duplicate</button>
+          <button class="btn" id="itPark">Move out</button>
+          <button class="btn danger" id="itDel">Delete</button>
+        </div>
+      </section>
+
+      <section class="panel card">
+        <p class="eyebrow">View settings</p>
+        <div class="row"><label for="doorR">Room door</label><div class="val"><input id="doorR" type="range" min="0" max="100"><output id="doorO"></output></div></div>
+        <div class="row"><label for="blindR">Roller blind</label><div class="val"><input id="blindR" type="range" min="0" max="100"><output id="blindO"></output></div></div>
+        <div class="row"><label for="bedding">Bedding</label><div class="val"><input id="bedding" type="checkbox"></div></div>
+        <div class="row"><span>Eye height</span><div class="val"><div class="seg" id="eyeSeg">
+          <button data-v="1.62">Standing</button><button data-v="1.12">Seated</button><button data-v="0.42">Pet</button></div></div></div>
+        <div class="row"><span>3D quality</span><div class="val"><div class="seg" id="qualSeg">
+          <button data-v="best">Best</button><button data-v="fast">Fast</button></div></div></div>
+      </section>
+
+      <section class="panel card">
+        <p class="eyebrow">Add furniture</p>
+        <div class="chips" id="catalog"></div>
+      </section>
+
+      <section class="panel card">
+        <p class="eyebrow">My layouts</p>
+        <form class="save" id="saveForm">
+          <input class="field" id="saveName" placeholder="e.g. Desk by the window" aria-label="Layout name" maxlength="50">
+          <button class="btn" type="submit">Save</button>
+        </form>
+        <ul class="saved" id="saved"></ul>
+        <p class="muted" id="savedNote"></p>
+      </section>
+    </aside>
+  </main>
+</div>
+<dialog id="ask" aria-labelledby="askTitle">
+  <h3 id="askTitle"></h3>
+  <p id="askText"></p>
+  <input class="field" id="askInput" maxlength="40" aria-label="Item name" hidden>
+  <div class="ask-actions"><button type="button" class="btn" id="askNo">No</button><button type="button" class="btn" id="askYes">Yes</button></div>
+</dialog>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+// ---------- Room facts (metres). x runs west→east from the TV wall, z runs north→south from the door wall.
+const ROOM = { W: 3.8, D: 3.7, doorX: .05, doorW: .8, closetX: 1.21, closetW: 1.27, closetD: .68, sill: .87, winH: 1.23, Hhi: 3, Hlo: 2.4 };
+const ceilAt = x => ROOM.Hhi - (ROOM.Hhi - ROOM.Hlo) * x / ROOM.W; // slopes down from the TV wall to the window wall
+const DRAFT_KEY = 'room-planner-draft-v4', SAVED_KEY = 'room-planner-saved-v1';
+const LANG_KEY = 'room-planner-lang';
+let LANG = 'en';
+try { if (localStorage.getItem(LANG_KEY) === 'es') LANG = 'es'; } catch {}
+const ES = {
+"Aldo's room": "Recámara de Aldo",
+"Copy summary": "Copiar resumen",
+"Floor plan": "Plano",
+"Drag to move. Double-click to rename. Cmd + click selects several.": "Arrastra para mover. Doble clic para cambiar el nombre. Cmd + clic selecciona varios.",
+"{n} objects selected": "{n} objetos seleccionados",
+"Rename \"{a}\"": "Cambiar nombre de \"{a}\"",
+"Type a new name for this object.": "Escribe un nombre nuevo para este objeto.",
+"Cancel": "Cancelar",
+"Outside view": "Vista exterior",
+"Walk the room": "Caminar el cuarto",
+"From the door": "Desde la puerta",
+"From the window": "Desde la ventana",
+"From the bed": "Desde la cama",
+"Day": "Día",
+"Evening": "Noche",
+"Bed test": "Prueba de cama",
+"Bed frame": "Base",
+"Headboard": "Cabecera",
+"Current": "Actual",
+"None": "Ninguna",
+"Headboard width": "Ancho de cabecera",
+"Headboard height": "Alto de cabecera",
+"Each cell shows how much of the window stays clear and how many checks flag something. Red means something collides, orange a trade-off. Click a cell to load it.": "Cada celda muestra cuánta ventana queda libre y cuántas alertas hay. Rojo significa que algo choca y naranja que hay que ceder en algo. Haz clic en una celda para cargarla.",
+"Layout": "Distribución",
+"free floor": "piso libre",
+"tightest route": "paso más angosto",
+"moves from today": "cambios vs. hoy",
+"window clear": "ventana libre",
+"Selected": "Seleccionado",
+"Width": "Ancho",
+"Depth": "Fondo",
+"Height": "Alto",
+"Turn °": "Giro °",
+"Turn 45°": "Girar 45°",
+"Turn 90°": "Girar 90°",
+"Duplicate": "Duplicar",
+"Delete": "Eliminar",
+"View settings": "Ajustes de vista",
+"Room door": "Puerta",
+"Roller blind": "Persiana",
+"Bedding": "Ropa de cama",
+"Eye height": "Altura de vista",
+"Standing": "De pie",
+"Seated": "Sentado",
+"Pet": "Mascota",
+"3D quality": "Calidad 3D",
+"Best": "Mejor",
+"Fast": "Rápida",
+"Add furniture": "Agregar muebles",
+"My layouts": "Mis distribuciones",
+"Save": "Guardar",
+"e.g. Desk by the window": "p. ej. Escritorio junto a la ventana",
+"Undo (Ctrl+Z)": "Deshacer (Ctrl+Z)",
+"Redo (Ctrl+Shift+Z)": "Rehacer (Ctrl+Shift+Z)",
+"Undo": "Deshacer",
+"Redo": "Rehacer",
+"Copies a written summary of this layout": "Copia un resumen escrito de esta distribución",
+"Snap to 5 cm and to walls": "Ajustar cada 5 cm y a las paredes",
+"Snap to grid and walls": "Ajustar a cuadrícula y paredes",
+"Show the space furniture needs in front of it": "Mostrar el espacio que necesitan los muebles al frente",
+"Show clearance zones": "Mostrar zonas libres",
+"Enlarge the plan": "Agrandar el plano",
+"Layouts": "Distribuciones",
+"3D view": "Vista 3D",
+"Draggable floor plan, 380 by 370 centimetres": "Plano arrastrable de 380 por 370 centímetros",
+"3D room. In walk mode use W A S D to walk and the arrow keys to look around.": "Cuarto en 3D. Al caminar usa W A S D para moverte y las flechas para mirar.",
+"Walk controls": "Controles para caminar",
+"Forward": "Adelante",
+"Left": "Izquierda",
+"Back": "Atrás",
+"Right": "Derecha",
+"Layout details": "Detalles de la distribución",
+"Every layout with every bed setup": "Cada distribución con cada opción de cama",
+"Item name": "Nombre del mueble",
+"Layout name": "Nombre de la distribución",
+"Shortcut: Shift + R": "Atajo: Shift + R",
+"Shortcut: R": "Atajo: R",
+"Language": "Idioma",
+"Jute rug": "Tapete de yute",
+"Round rug": "Tapete redondo",
+"Bed": "Cama",
+"Storage bench": "Banca de guardado",
+"Desk": "Escritorio",
+"Desk chair": "Silla de escritorio",
+"TV 65\" + stand": "TV 65\" + mueble",
+"Nightstand": "Buró",
+"White unit": "Unidad blanca",
+"Rolling cart": "Carrito",
+"Floor mirror": "Espejo de piso",
+"Dog feeder": "Comedero de perros",
+"Cap + shoe tower": "Torre de gorras y tenis",
+"Wide bookshelf": "Librero ancho",
+"Narrow bookshelf": "Librero angosto",
+"Stool + basket": "Banco + canasta",
+"Floor lamp": "Lámpara de pie",
+"Monstera on stand": "Monstera en mesita",
+"Framed puzzle": "Rompecabezas enmarcado",
+"Dresser": "Cómoda",
+"Bookcase": "Librero",
+"Wardrobe": "Ropero",
+"Armchair": "Sillón",
+"Plant": "Planta",
+"Storage box": "Caja de guardado",
+"Today": "Hoy",
+"The room today": "El cuarto hoy",
+"Measured from your notes and placed from your photos. Bed under the window, TV across from it, shelves on the far wall.": "Medido con tus notas y acomodado según tus fotos. Cama bajo la ventana, TV enfrente y libreros en la pared del fondo.",
+"TV sits straight across from the bed": "La TV queda justo enfrente de la cama",
+"Door opens clear against the TV wall": "La puerta abre libre contra la pared de la TV",
+"Enough room behind the desk for the chair": "Hay espacio suficiente para la silla detrás del escritorio",
+"A · Turn the desk": "A · Girar el escritorio",
+"Easiest": "Más fácil",
+"The desk turns 90° into the window corner, so you sit with the window at your side. Everything else stays put.": "El escritorio gira 90° hacia la esquina de la ventana, así te sientas con la ventana a un lado. Todo lo demás se queda igual.",
+"Only the desk and chair move": "Solo se mueven el escritorio y la silla",
+"Chair rolls back onto the free floor": "La silla se desliza hacia el piso libre",
+"Daylight on the desk from the side": "Luz natural de lado en el escritorio",
+"The framed puzzle no longer sits over the desk": "El rompecabezas ya no queda sobre el escritorio",
+"B · Corner bed": "B · Cama en la esquina",
+"B · Bed in the corner": "B · Cama en la esquina",
+"The bed moves into the south-east corner, which opens the north half of the room. The desk gets the window and the cap tower moves to the 1.32 m wall.": "La cama pasa a la esquina junto a la ventana y los libreros, lo que abre la mitad del cuarto del lado del clóset. El escritorio queda en la ventana y la torre de gorras pasa a la pared de 1.32 m.",
+"Largest open floor in the middle of the room": "El mayor espacio libre en medio del cuarto",
+"Desk faces straight out the window": "El escritorio mira directo a la ventana",
+"Nightstand goes beside the bed": "El buró va junto a la cama",
+"You can only get into bed from one side": "Solo puedes subir a la cama por un lado",
+"Stool and cart need a new home": "El banco y el carrito necesitan otro lugar",
+"C · Head on shelf wall": "C · Cabecera en libreros",
+"C · Headboard on the shelf wall": "C · Cabecera en la pared de libreros",
+"The headboard goes on the long solid wall, so the window stays completely clear. The cap tower moves to the TV wall and the shelves slide west.": "La cabecera va en la pared larga y sólida, así la ventana queda totalmente libre. La torre de gorras pasa a la pared de la TV y los libreros se recorren hacia ella.",
+"Solid wall behind a tall headboard": "Pared sólida detrás de una cabecera alta",
+"Window fully clear": "Ventana totalmente libre",
+"Nightstand sits beside the bed": "El buró queda junto a la cama",
+"TV ends up beside the bed instead of in front of it": "La TV queda a un lado de la cama, no enfrente",
+"Mirror needs a new home": "El espejo necesita otro lugar",
+"D · Head on TV wall": "D · Cabecera en la TV",
+"D · Headboard on the TV wall": "D · Cabecera en la pared de la TV",
+"The bed swaps ends. The headboard takes the TV wall, the foot points at the window and the TV stand moves under the window.": "La cama se invierte. La cabecera ocupa la pared de la TV, los pies apuntan a la ventana y el mueble de TV pasa debajo de la ventana.",
+"Desk and shelves stay where they are": "El escritorio y los libreros se quedan donde están",
+"TV is still straight ahead of the bed": "La TV sigue justo enfrente de la cama",
+"TV sits in front of the lower part of the window": "La TV queda frente a la parte baja de la ventana",
+"My edit": "Mi edición",
+"a saved layout": "una distribución guardada",
+"Your changes, starting from \"{a}\". The checks below update as you move things. Your edits stay after a reload. Click Today or a lettered layout to start over.": "Tus cambios, a partir de \"{a}\". Las alertas de abajo se actualizan al mover cosas. Tus cambios siguen ahí al recargar. Haz clic en Hoy o en una distribución con letra para empezar de nuevo.",
+"Matrimonial, current head": "Matrimonial, cabecera actual",
+"Matrimonial, king head": "Matrimonial, cabecera king",
+"King bed, king head": "Cama king, cabecera king",
+"{a} goes through a wall": "{a} atraviesa una pared",
+"{a} overlaps {b}": "{a} choca con {b}",
+"{a} blocks the door swing": "{a} estorba al abrir la puerta",
+"{a} blocks the closet opening": "{a} tapa la entrada del clóset",
+"{a} blocks {n}% of the window": "{a} tapa {n}% de la ventana",
+"Only {a} cm behind the desk. A chair needs about {b}": "Solo {a} cm detrás del escritorio. Una silla necesita unos {b}",
+"From bed, the TV is {n}° to the side": "Desde la cama, la TV queda {n}° de lado",
+"TV is turned {n}° away from the bed": "La TV está girada {n}° respecto a la cama",
+"Headboard is {n} cm narrower than the frame": "La cabecera es {n} cm más angosta que la base",
+"Headboard is {n} cm wider than the bed": "La cabecera es {n} cm más ancha que la cama",
+"You can't walk from the door to {a}": "No hay paso desde la puerta hacia: {a}",
+"the closet": "el clóset",
+"the bed": "la cama",
+"Tightest walking route is {n} cm. Aim for 60": "El paso más angosto mide {n} cm. Lo ideal son 60",
+"{a} is outside the room": "{a} queda fuera del cuarto",
+"{a} are outside the room": "{a} quedan fuera del cuarto",
+"Checks ({n})": "Alertas ({n})",
+"Everything fits. Door, closet, window and routes are clear.": "Todo cabe. Puerta, clóset, ventana y pasos están libres.",
+"{n} issue": "{n} alerta",
+"{n} issues": "{n} alertas",
+"No issues": "Sin alertas",
+"CLOSET": "CLÓSET",
+"{n} cm free": "{n} cm libres",
+"door {n}": "puerta {n}",
+"window {n}": "ventana {n}",
+"ceiling {n}": "techo {n}",
+"OUTSIDE THE ROOM": "FUERA DEL CUARTO",
+"Drag furniture here to try the room without it": "Arrastra muebles aquí para probar el cuarto sin ellos",
+"380 × 370 cm · ceiling {a} to {b} cm": "380 × 370 cm · techo de {a} a {b} cm",
+"Close blind": "Cerrar persiana",
+"Open blind": "Abrir persiana",
+"Close door": "Cerrar puerta",
+"Open door": "Abrir puerta",
+"Movable monstera": "Monstera móvil",
+"Wall mirror": "Espejo de pared",
+"Height from floor": "Altura del piso",
+"{a} goes through the ceiling": "{a} atraviesa el techo",
+"{a} covers the door": "{a} tapa la puerta",
+"{a} covers the closet": "{a} tapa el clóset",
+"{a} covers the window": "{a} tapa la ventana",
+"Delete {n} objects?": "¿Eliminar {n} objetos?",
+"Are you sure you want to delete this object? You can bring it back with Undo.": "¿Seguro que quieres eliminar este objeto? Puedes recuperarlo con Deshacer.",
+"Are you sure you want to delete these objects? You can bring them back with Undo.": "¿Seguro que quieres eliminar estos objetos? Puedes recuperarlos con Deshacer.",
+"Bring back": "Regresar",
+"Move out": "Sacar",
+"<kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> to walk, arrow keys or drag to look, <kbd>Shift</kbd> to hurry.": "<kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> para caminar, flechas o arrastrar para mirar, <kbd>Shift</kbd> para ir más rápido.",
+"Use the arrows to walk. Drag to look around.": "Usa las flechas para caminar. Arrastra para mirar.",
+"Drag empty space to orbit, pinch to zoom. Drag furniture to move it.": "Arrastra el espacio vacío para girar y pellizca para acercar. Arrastra un mueble para moverlo.",
+"Drag empty space to orbit, scroll to zoom. Drag furniture to move it.": "Arrastra el espacio vacío para girar y usa la rueda para acercar. Arrastra un mueble para moverlo.",
+"Layout summary copied": "Resumen copiado",
+"Copying is blocked here. Try again from the full page.": "Aquí no se puede copiar. Inténtalo desde la página completa.",
+"{a} added. Drag it into place.": "{a} agregado. Arrástralo a su lugar.",
+"Delete {a}": "Eliminar {a}",
+"Nothing saved yet. ": "Aún no hay nada guardado. ",
+"Layouts save to this page, so they follow you to other devices.": "Las distribuciones se guardan en esta página, así que te siguen a otros dispositivos.",
+"Layouts save in this browser only.": "Las distribuciones se guardan solo en este navegador.",
+"Layout {n}": "Distribución {n}",
+"Replace \"{a}\"?": "¿Reemplazar \"{a}\"?",
+"A layout with this name already exists. Saving will replace it with what is on screen now.": "Ya existe una distribución con este nombre. Al guardar se reemplazará con lo que ves ahora.",
+"Yes, replace": "Sí, reemplazar",
+"Saved \"{a}\" to this page": "\"{a}\" guardado en esta página",
+"Saved \"{a}\" in this browser": "\"{a}\" guardado en este navegador",
+"Delete \"{a}\"?": "¿Eliminar \"{a}\"?",
+"Are you sure you want to delete this layout? This can't be undone.": "¿Seguro que quieres eliminar esta distribución? No se puede deshacer.",
+"Yes, delete": "Sí, eliminar",
+"The 3D library could not load. The floor plan and checks still work.": "No se pudo cargar la biblioteca 3D. El plano y las alertas siguen funcionando.",
+"This browser has WebGL turned off, so the 3D view is unavailable. The floor plan and checks still work.": "Este navegador tiene WebGL desactivado, así que la vista 3D no está disponible. El plano y las alertas siguen funcionando.",
+"Room 3.80 × 3.70 m, ceiling sloping from {a} m to {b} m. Layout: {c}.": "Cuarto de 3.80 × 3.70 m, techo inclinado de {a} m a {b} m. Distribución: {c}.",
+"Bed: {a} frame, headboard {b} wide × {c} tall.": "Cama: base {a}, cabecera de {b} de ancho × {c} de alto.",
+"Bed: {a} frame, no headboard.": "Cama: base {a}, sin cabecera.",
+"Window {a}% clear, free floor {b} m², tightest route {c} cm.": "Ventana {a}% libre, piso libre {b} m², paso más angosto {c} cm.",
+"{a}: out of the room": "{a}: fuera del cuarto",
+"{a} ({b}): {c} cm from the TV wall, {d} cm from the door wall": "{a} ({b}): a {c} cm de la pared de la TV y a {d} cm de la pared de la puerta",
+"To check:": "Por revisar:"
+};
+const tr = (s, v = {}) => ((LANG === 'es' && ES[s]) || s).replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m);
+const nm = it => tr(it.name);
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const rad = d => d * Math.PI / 180;
+
+// flags: rug = floor covering, soft = can be walked around or tucked under (no overlap check), wall = hangs on a wall, thin = slim enough not to block a window
+const BASE = [
+  { id: 'rug1', type: 'rug', name: 'Jute rug', x: 1.62, z: 1.93, w: 1.9, d: 1.15, h: .01, rot: 90, rug: 1 },
+  { id: 'rug2', type: 'rugRound', name: 'Round rug', x: 2.95, z: .82, w: .9, d: .9, h: .01, rot: 0, rug: 1 },
+  { id: 'bed', type: 'bed', name: 'Bed', x: 2.7, z: 1.93, w: 1.3, d: 2, h: .66, rot: 270, frame: 'current', headType: 'current' },
+  { id: 'head', type: 'headboard', name: 'Headboard', x: 3.75, z: 1.93, w: 1.3, d: .1, h: 1.05, rot: 270, attach: 'bed', style: 'current' },
+  { id: 'bench', type: 'bench', name: 'Storage bench', x: 1.53, z: 1.93, w: .98, d: .33, h: .52, rot: 90 },
+  { id: 'desk', type: 'desk', name: 'Desk', x: 3.17, z: .27, w: 1.2, d: .5, h: .76, rot: 0, zone: .75 },
+  { id: 'chair', type: 'chair', name: 'Desk chair', x: 2.95, z: .8, w: .6, d: .6, h: .9, rot: 180, soft: 1 },
+  { id: 'tv', type: 'tvunit', name: 'TV 65" + stand', x: .21, z: 2.22, w: 1.46, d: .4, h: 1.61, tvW: 1.45, rot: 90 },
+  { id: 'wood', type: 'woodcab', name: 'Nightstand', x: .7, z: 3, w: .55, d: .37, h: .65, rot: 0 },
+  { id: 'unit', type: 'whiteUnit', name: 'White unit', x: .19, z: 1.19, w: .32, d: .32, h: .62, rot: 90, thin: 1 },
+  { id: 'cart', type: 'cart', name: 'Rolling cart', x: .2, z: .93, w: .22, d: .36, h: .75, rot: 90, thin: 1 },
+  { id: 'mirror', type: 'mirror', name: 'Floor mirror', x: .35, z: 3.38, w: .78, d: .12, h: 1.73, rot: 135 },
+  { id: 'bowls', type: 'bowls', name: 'Dog feeder', x: .82, z: 3.44, w: .3, d: .5, h: .15, rot: 0 },
+  { id: 'caps', type: 'capTower', name: 'Cap + shoe tower', x: 1.38, z: 3.52, w: .8, d: .35, h: 1.34, rot: 180 },
+  { id: 'shelfW', type: 'shelf', name: 'Wide bookshelf', x: 2.15, z: 3.54, w: .67, d: .3, h: 1.67, rot: 180 },
+  { id: 'shelfN', type: 'shelf', name: 'Narrow bookshelf', x: 2.72, z: 3.54, w: .34, d: .3, h: 1.7, rot: 180 },
+  { id: 'stool', type: 'basket', name: 'Stool + basket', x: 3.4, z: 3.52, w: .34, d: .34, h: .72, rot: 0, thin: 1 },
+  { id: 'lamp', type: 'lamp', name: 'Floor lamp', x: 3.68, z: 3.42, w: .2, d: .2, h: 1.65, rot: 0, thin: 1 },
+  { id: 'plant', type: 'plant', name: 'Monstera on stand', x: 3.5, z: 3.02, w: .4, d: .37, h: 1.35, rot: 0, thin: 1, stand: .6 },
+  { id: 'plantTop', type: 'plant', name: 'Movable monstera', x: .5, z: 5, w: .3, d: .3, h: .75, rot: 0, thin: 1, soft: 1, onTop: 1, spare: 1 },
+  { id: 'mirrorWall', type: 'mirror', name: 'Wall mirror', x: 1.4, z: 5, w: .78, d: .04, h: 1.73, rot: 0, y: .35, wall: 1, hang: 1, spare: 1 },
+  { id: 'art', type: 'painting', name: 'Framed puzzle', x: 3.1, z: .02, w: .78, d: .03, h: .56, rot: 0, y: 1.3, wall: 1 },
+];
+const patch = (changes) => BASE.map(b => ({ ...b, ...(changes[b.id] || {}) }));
+const LAYOUTS = {
+  now: {
+    tab: 'Today', title: 'The room today', text: 'Measured from your notes and placed from your photos. Bed under the window, TV across from it, shelves on the far wall.',
+    notes: [['ok', 'TV sits straight across from the bed'], ['ok', 'Door opens clear against the TV wall'], ['ok', 'Enough room behind the desk for the chair']],
+    items: patch({}),
+  },
+  a: {
+    tab: 'A · Turn the desk', tag: 'Easiest', title: 'A · Turn the desk', text: 'The desk turns 90° into the window corner, so you sit with the window at your side. Everything else stays put.',
+    notes: [['ok', 'Only the desk and chair move'], ['ok', 'Chair rolls back onto the free floor'], ['ok', 'Daylight on the desk from the side'], ['no', 'The framed puzzle no longer sits over the desk']],
+    items: patch({ desk: { x: 3.52, z: .63, rot: 270 }, chair: { x: 2.93, z: .63, rot: 90 }, rug2: { x: 2.8, z: .63 } }),
+  },
+  b: {
+    tab: 'B · Corner bed', title: 'B · Bed in the corner', text: 'The bed moves into the south-east corner, which opens the north half of the room. The desk gets the window and the cap tower moves to the 1.32 m wall.',
+    notes: [['ok', 'Largest open floor in the middle of the room'], ['ok', 'Desk faces straight out the window'], ['ok', 'Nightstand goes beside the bed'], ['no', 'You can only get into bed from one side'], ['no', 'Stool and cart need a new home']],
+    items: patch({
+      bed: { z: 3.04 }, bench: { z: 3.04 }, rug1: { x: 1.3, z: 2.9 }, rug2: { x: 2.7, z: 1.18 },
+      desk: { x: 3.52, z: 1.18, rot: 270 }, chair: { x: 2.95, z: 1.18, rot: 90 },
+      caps: { x: 2.92, z: .2, rot: 0 }, plant: { x: 3.55, z: .28 }, lamp: { x: 3.2, z: 2.25 },
+      tv: { z: 2.6 }, mirror: { x: .08, z: 1.2, rot: 90 }, unit: { x: 1.02, z: .18, rot: 0 },
+      shelfW: { x: .36, z: 3.54 }, shelfN: { x: .88, z: 3.54 }, wood: { x: 3.615, z: 2.1, rot: 270 }, bowls: { x: 1.21, z: 3.44 },
+      art: { x: .95, z: .02, y: 1.5 }, stool: { x: 1.2, z: 4.5 }, cart: { x: 2.2, z: 4.5 },
+    }),
+    wide: { bed: { z: 2.69 }, bench: { z: 2.69 }, rug1: { z: 2.6 }, desk: { z: 1.1 }, chair: { z: 1.1 }, rug2: { z: 1.1 }, wood: { x: 3.1, z: 4.5, rot: 0 }, lamp: { x: 2.9, z: 1.5 } },
+  },
+  c: {
+    tab: 'C · Head on shelf wall', title: 'C · Headboard on the shelf wall', text: 'The headboard goes on the long solid wall, so the window stays completely clear. The cap tower moves to the TV wall and the shelves slide west.',
+    notes: [['ok', 'Solid wall behind a tall headboard'], ['ok', 'Window fully clear'], ['ok', 'Nightstand sits beside the bed'], ['no', 'TV ends up beside the bed instead of in front of it'], ['no', 'Mirror needs a new home']],
+    items: patch({
+      bed: { x: 2.35, z: 2.6, rot: 180 }, bench: { x: 2.35, z: 1.43, rot: 0 }, rug1: { x: 2.35, z: 1.6, rot: 0 },
+      caps: { x: .185, z: 1.3, rot: 90 }, tv: { z: 2.6 }, unit: { x: 1.02, z: .18, rot: 0 }, cart: { x: 3.62, z: .75, rot: 90 },
+      shelfW: { x: .36, z: 3.54 }, shelfN: { x: .88, z: 3.54 }, wood: { x: 1.4, z: 3.415, rot: 180 }, lamp: { x: 3.2, z: 3.45 },
+      plant: { x: 3.57, z: 3.4 }, stool: { x: 3.6, z: 2.9 }, bowls: { x: 3.63, z: 1.35 }, mirror: { x: .6, z: 4.5, rot: 0 },
+    }),
+    king: { wood: { x: 1.5, z: 4.5, rot: 0 }, lamp: { x: 3.6, z: 3.55 }, plant: { x: 3.57, z: 2.9 }, stool: { x: 2.3, z: 4.5 } },
+  },
+  d: {
+    tab: 'D · Head on TV wall', title: 'D · Headboard on the TV wall', text: 'The bed swaps ends. The headboard takes the TV wall, the foot points at the window and the TV stand moves under the window.',
+    notes: [['ok', 'Solid wall behind a tall headboard'], ['ok', 'Desk and shelves stay where they are'], ['ok', 'TV is still straight ahead of the bed'], ['no', 'TV sits in front of the lower part of the window']],
+    items: patch({
+      bed: { x: 1.11, z: 1.87, rot: 90 }, bench: { x: 2.28, z: 1.87, rot: 90 }, rug1: { x: 2.2, z: 1.87 },
+      tv: { x: 3.59, z: 2.05, rot: 270 }, unit: { x: 1.02, z: .18, rot: 0 }, cart: { x: 3.62, z: .75, rot: 90 },
+      plant: { z: 3.08 }, lamp: { z: 3.44 }, wood: { x: .34, z: 2.8, rot: 90 },
+    }),
+    king: { wood: { x: 1.5, z: 4.5, rot: 0 } },
+  },
+};
+Object.values(LAYOUTS).forEach(l => syncHead(l.items));
+const CATALOG = [
+  { type: 'box', name: 'Nightstand', w: .45, d: .4, h: .55, color: '#5a3d28' },
+  { type: 'box', name: 'Dresser', w: 1.2, d: .48, h: .8, color: '#3a2a20', drawers: 3 },
+  { type: 'shelf', name: 'Bookcase', w: .8, d: .3, h: 1.8 },
+  { type: 'box', name: 'Wardrobe', w: 1, d: .58, h: 2, color: '#e7e4dc', drawers: 2 },
+  { type: 'chairSoft', name: 'Armchair', w: .8, d: .8, h: .85, soft: 0 },
+  { type: 'plant', name: 'Plant', w: .45, d: .45, h: 1, thin: 1 },
+  { type: 'rugRound', name: 'Round rug', w: 1.2, d: 1.2, h: .01, rug: 1 },
+  { type: 'box', name: 'Storage box', w: .6, d: .4, h: .3, color: '#b9b6a8' },
+];
+
+// ---------- State
+const S = {
+  layout: 'now', items: clone(LAYOUTS.now.items), sel: null, snap: true, zones: true,
+  room: { winW: 1.7 },
+  view: { mode: 'orbit', time: 'day', door: 90, blind: 12, bedding: true, eye: 1.62, quality: 'best', spot: 'door' },
+  past: [], future: [], saved: [], group: [],
+};
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+const winZ = () => [ROOM.D / 2 - S.room.winW / 2, ROOM.D / 2 + S.room.winW / 2];
+const item = id => S.items.find(i => i.id === id);
+const inRoom = it => !isParked(it);
+const isParked = it => it.z > ROOM.D + .22 || it.x > ROOM.W + .3;
+const solid = it => !it.rug && !it.soft && !it.wall && inRoom(it);
+
+// ---------- Geometry. Footprints are oriented rectangles; rot follows three.js (positive turns +z toward +x).
+function axes(it) { const c = Math.cos(rad(it.rot)), s = Math.sin(rad(it.rot)); return { ux: [c, -s], uz: [s, c] }; }
+function corners(it) {
+  const { ux, uz } = axes(it), a = it.w / 2, b = it.d / 2;
+  return [[-a, -b], [a, -b], [a, b], [-a, b]].map(([p, q]) => [it.x + ux[0] * p + uz[0] * q, it.z + ux[1] * p + uz[1] * q]);
+}
+function overlap(A, B, eps = .012) {
+  const ca = corners(A), cb = corners(B), ax = [axes(A).ux, axes(A).uz, axes(B).ux, axes(B).uz];
+  for (const n of ax) {
+    const pa = ca.map(c => c[0] * n[0] + c[1] * n[1]), pb = cb.map(c => c[0] * n[0] + c[1] * n[1]);
+    if (Math.max(...pa) - eps <= Math.min(...pb) || Math.max(...pb) - eps <= Math.min(...pa)) return false;
+  }
+  return true;
+}
+function distTo(it, x, z) { // distance from a point to a footprint (0 inside)
+  const { ux, uz } = axes(it), dx = x - it.x, dz = z - it.z;
+  const lx = Math.abs(dx * ux[0] + dz * ux[1]) - it.w / 2, lz = Math.abs(dx * uz[0] + dz * uz[1]) - it.d / 2;
+  return Math.hypot(Math.max(lx, 0), Math.max(lz, 0)) + Math.min(Math.max(lx, lz), 0);
+}
+const aabb = it => { const c = corners(it), xs = c.map(p => p[0]), zs = c.map(p => p[1]); return { x0: Math.min(...xs), x1: Math.max(...xs), z0: Math.min(...zs), z1: Math.max(...zs) }; };
+
+// ---------- Bed setup. The headboard is its own footprint but always travels with the bed.
+const FRAMES = { current: { w: 1.3, label: 'Matrimonial' }, queen: { w: 1.6, label: 'Queen' }, king: { w: 2, label: 'King' } };
+const HEADS = { current: { w: 1.3, h: 1.05, label: 'Current' }, king: { w: 2, h: 1.71, label: 'King' }, none: { label: 'None' } };
+const SETUPS = [['current', 'current', 'Matrimonial, current head'], ['current', 'king', 'Matrimonial, king head'], ['king', 'king', 'King bed, king head']];
+function layoutItems(k, frame, head) { // preset positions, with the moves a wider bed or headboard needs
+  const l = LAYOUTS[k], items = clone(l.items), p = { ...(frame === 'king' || head === 'king' ? l.wide : {}) };
+  if (frame === 'king') for (const [id, c] of Object.entries(l.king || {})) p[id] = { ...p[id], ...c };
+  for (const [id, c] of Object.entries(p)) Object.assign(items.find(i => i.id === id), c);
+  syncHead(items); return items;
+}
+function syncHead(items) {
+  const bed = items.find(i => i.id === 'bed'), head = items.find(i => i.id === 'head'); if (!bed || !head) return;
+  const { uz } = axes(bed), r = bed.d / 2 + head.d / 2;
+  head.x = +(bed.x - uz[0] * r).toFixed(3); head.z = +(bed.z - uz[1] * r).toFixed(3); head.rot = bed.rot;
+}
+function bedBox(items) {
+  const parts = items.filter(i => i.id === 'bed' || i.id === 'head').map(aabb);
+  return { x0: Math.min(...parts.map(p => p.x0)), x1: Math.max(...parts.map(p => p.x1)), z0: Math.min(...parts.map(p => p.z0)), z1: Math.max(...parts.map(p => p.z1)) };
+}
+function applyBed(items, frame, headType, dims) {
+  const bed = items.find(i => i.id === 'bed'); if (!bed) return;
+  bed.frame = frame; bed.headType = headType; bed.w = FRAMES[frame].w;
+  let k = items.findIndex(i => i.id === 'head');
+  if (headType === 'none') { if (k >= 0) items.splice(k, 1); }
+  else {
+    if (k < 0) { items.push(clone(BASE.find(b => b.id === 'head'))); k = items.length - 1; }
+    items[k].w = dims?.w ?? HEADS[headType].w; items[k].h = dims?.h ?? HEADS[headType].h; items[k].style = headType;
+  }
+  syncHead(items);
+  if (bed.z < ROOM.D + .22) { // a wider bed slides off the wall it would otherwise go through
+    const b = bedBox(items), dx = Math.max(0, -b.x0) - Math.max(0, b.x1 - ROOM.W), dz = Math.max(0, -b.z0) - Math.max(0, b.z1 - ROOM.D);
+    bed.x = +(bed.x + dx).toFixed(3); bed.z = +(bed.z + dz).toFixed(3); syncHead(items);
+  }
+}
+const bedSetup = (items = S.items) => { const b = items.find(i => i.id === 'bed'), h = items.find(i => i.id === 'head'); return { frame: b?.frame || 'current', head: b?.headType || 'current', dims: h ? { w: h.w, h: h.h } : null }; };
+function windowCover(live) { // share of the glass left clear, plus each item's share
+  const [z0, z1] = winZ(), nz = 34, ny = 24, per = new Map(); let hidden = 0;
+  const near = live.filter(i => !i.thin && aabb(i).x1 > ROOM.W - .5).map(i => { const b = aabb(i), k = i.tvW ? Math.min(1, i.tvW / i.w) : 1, c = (b.z0 + b.z1) / 2, half = (b.z1 - b.z0) / 2 * k; return { i, a: c - half, b: c + half }; });
+  for (let p = 0; p < nz; p++) for (let q = 0; q < ny; q++) {
+    const z = z0 + (p + .5) / nz * (z1 - z0), y = ROOM.sill + (q + .5) / ny * ROOM.winH; let hit = false;
+    for (const n of near) if (z > n.a && z < n.b && y < n.i.h) { per.set(n.i, (per.get(n.i) || 0) + 1); hit = true; }
+    if (hit) hidden++;
+  }
+  return { clear: 1 - hidden / (nz * ny), per: [...per].map(([i, n]) => [i, n / (nz * ny)]) };
+}
+
+// ---------- Checks: run on every move
+function analyse() {
+  const out = [], flagged = new Set(), live = S.items.filter(solid), add = (level, text, ids = []) => { out.push({ level, text, ids }); ids.forEach(i => flagged.add(i)); };
+  for (const it of S.items.filter(i => inRoom(i) && !i.rug && !i.wall)) {
+    const b = aabb(it);
+    if (b.x0 < -.015 || b.z0 < -.015 || b.x1 > ROOM.W + .015 || b.z1 > ROOM.D + .015) add('bad', tr('{a} goes through a wall', { a: nm(it) }), [it.id]);
+  }
+  for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++)
+    if (live[i].attach !== live[j].id && live[j].attach !== live[i].id && overlap(live[i], live[j])) add('bad', tr('{a} overlaps {b}', { a: nm(live[i]), b: nm(live[j]) }), [live[i].id, live[j].id]);
+  // door swing: quarter circle from the hinge on the west jamb
+  for (const it of live) {
+    let hit = false;
+    for (let r = .1; r <= ROOM.doorW && !hit; r += .1) for (let a = 0; a <= 90; a += 10)
+      if (distTo(it, ROOM.doorX + r * Math.cos(rad(a)), r * Math.sin(rad(a))) <= 0) { hit = true; break; }
+    if (hit) add('bad', tr('{a} blocks the door swing', { a: nm(it) }), [it.id]);
+  }
+  const closetZone = { x: ROOM.closetX + ROOM.closetW / 2, z: .22, w: ROOM.closetW, d: .44, rot: 0 };
+  for (const it of live) if (overlap(it, closetZone)) add('warn', tr('{a} blocks the closet opening', { a: nm(it) }), [it.id]);
+  const win = windowCover(live);
+  for (const [it, share] of win.per) if (share > .01) add(share > .5 ? 'bad' : 'warn', tr('{a} blocks {n}% of the window', { a: nm(it), n: Math.round(share * 100) }), [it.attach || it.id]);
+  // room behind the desk
+  const desk = item('desk');
+  if (desk && inRoom(desk)) {
+    const { uz } = axes(desk); let free = 1.2;
+    for (let s = 0; s <= 1.2; s += .02) {
+      const px = desk.x + uz[0] * (desk.d / 2 + s), pz = desk.z + uz[1] * (desk.d / 2 + s);
+      const blocked = live.some(o => o !== desk && [-.25, 0, .25].some(k => distTo(o, px + axes(desk).ux[0] * k, pz + axes(desk).ux[1] * k) <= 0));
+      if (blocked || px < 0 || pz < 0 || px > ROOM.W || pz > ROOM.D) { free = s; break; }
+    }
+    if (free < desk.zone) add('warn', tr('Only {a} cm behind the desk. A chair needs about {b}', { a: Math.round(free * 100), b: Math.round(desk.zone * 100) }), ['desk']);
+  }
+  // TV alignment with the bed
+  const tv = item('tv'), bed = item('bed');
+  if (tv && bed && inRoom(tv) && inRoom(bed)) {
+    const b = axes(bed).uz, px = bed.x - b[0] * (bed.d / 2 - .4), pz = bed.z - b[1] * (bed.d / 2 - .4), vx = tv.x - px, vz = tv.z - pz, len = Math.hypot(vx, vz);
+    const side = Math.acos(clamp((vx * b[0] + vz * b[1]) / len, -1, 1)) * 180 / Math.PI, t = axes(tv).uz, away = Math.acos(clamp(-(vx * t[0] + vz * t[1]) / len, -1, 1)) * 180 / Math.PI;
+    if (side > 35) add('warn', tr('From bed, the TV is {n}° to the side', { n: Math.round(side) }), ['tv']);
+    else if (away > 45) add('warn', tr('TV is turned {n}° away from the bed', { n: Math.round(away) }), ['tv']);
+  }
+  const hd = item('head');
+  if (hd && bed && hd.w < bed.w - .01) add('warn', tr('Headboard is {n} cm narrower than the frame', { n: cm(bed.w - hd.w) }), ['bed']);
+  if (hd && bed && hd.w > bed.w + .3) add('warn', tr('Headboard is {n} cm wider than the bed', { n: cm(hd.w - bed.w) }), ['bed']);
+  // walkable routes from the door, on a 5 cm distance field
+  const cell = .05, nx = Math.round(ROOM.W / cell), nz = Math.round(ROOM.D / cell), field = new Float32Array(nx * nz);
+  let freeCells = 0;
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+    const x = (i + .5) * cell, z = (j + .5) * cell; let m = Math.min(x, z, ROOM.W - x, ROOM.D - z), inside = false;
+    for (const it of live) { const d = distTo(it, x, z); if (d < m) m = d; if (d <= 0) inside = true; }
+    field[j * nx + i] = m; if (!inside) freeCells++;
+  }
+  const reach = r => {
+    const seen = new Uint8Array(nx * nz), s = Math.floor(.4 / cell) * nx + Math.floor(.45 / cell), q = [s];
+    if (field[s] < r) return seen; seen[s] = 1;
+    while (q.length) {
+      const c = q.pop(), i = c % nx, j = (c / nx) | 0;
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+        const a = i + di, b = j + dj, n = b * nx + a;
+        if (a >= 0 && b >= 0 && a < nx && b < nz && !seen[n] && field[n] >= r) { seen[n] = 1; q.push(n); }
+      }
+    }
+    return seen;
+  };
+  const touch = (seen, test) => { for (let c = 0; c < seen.length; c++) if (seen[c] && test((c % nx + .5) * cell, (((c / nx) | 0) + .5) * cell)) return true; return false; };
+  const targets = [{ name: tr('the closet'), test: (x, z) => x > ROOM.closetX && x < ROOM.closetX + ROOM.closetW && z < .55 }];
+  for (const id of ['bed', 'desk', 'caps', 'shelfW', 'tv']) { const it = item(id); if (it && inRoom(it)) targets.push({ name: id === 'bed' ? tr('the bed') : nm(it).toLowerCase(), test: (x, z) => distTo(it, x, z) < .4 }); }
+  let tightest = 1.2; const stuck = new Set();
+  for (const r of [.15, .175, .2, .225, .25, .275, .3, .325, .35, .375, .4, .425, .45]) {
+    const seen = reach(r);
+    for (const t of targets) if (!touch(seen, t.test)) { tightest = Math.min(tightest, (r - .025) * 2); if (r <= .175) stuck.add(t.name); }
+  }
+  if (stuck.size) add('bad', tr("You can't walk from the door to {a}", { a: [...stuck].join(', ') }));
+  else if (tightest < .6) add('warn', tr('Tightest walking route is {n} cm. Aim for 60', { n: Math.round(tightest * 100) }));
+  for (const it of S.items.filter(i => i.hang && inRoom(i))) {
+    const y0 = it.y || 0, y1 = y0 + it.h, c = it.rot === 0 || it.rot === 180 ? it.x : it.z, a = c - it.w / 2, b = c + it.w / 2, hits = (p, q) => a < q && b > p, n = nm(it);
+    if (y1 > ceilAt(it.x) + .005) add('bad', tr('{a} goes through the ceiling', { a: n }), [it.id]);
+    if (it.rot === 0 && hits(ROOM.doorX, ROOM.doorX + ROOM.doorW) && y0 < 2.03) add('bad', tr('{a} covers the door', { a: n }), [it.id]);
+    if (it.rot === 0 && hits(ROOM.closetX, ROOM.closetX + ROOM.closetW) && y0 < 2.12) add('bad', tr('{a} covers the closet', { a: n }), [it.id]);
+    if (it.rot === 270 && hits(...winZ()) && y0 < ROOM.sill + ROOM.winH && y1 > ROOM.sill) add('warn', tr('{a} covers the window', { a: n }), [it.id]);
+  }
+  const parked = S.items.filter(i => isParked(i) && !i.spare);
+  if (parked.length) add('warn', tr(parked.length > 1 ? '{a} are outside the room' : '{a} is outside the room', { a: parked.map(nm).join(', ') }), parked.map(p => p.id));
+  const base = LAYOUTS.now.items, moved = S.items.filter(i => { const o = base.find(b => b.id === i.id); return !i.rug && !i.wall && !i.attach && (!o || Math.hypot(o.x - i.x, o.z - i.z) > .02 || o.rot !== i.rot); }).length;
+  return { list: out, flagged, free: freeCells * cell * cell, tightest, moved, winClear: win.clear };
+}
+
+// ---------- History and persistence
+const snapshot = () => JSON.stringify({ items: S.items, layout: S.layout });
+function commit(before) { if (before === snapshot()) return; S.past.push(before); if (S.past.length > 80) S.past.shift(); S.future = []; afterChange(true); }
+function travel(from, to) {
+  if (!from.length) return; to.push(snapshot()); const s = JSON.parse(from.pop()); S.items = s.items; S.layout = s.layout;
+  if (!item(S.sel)) S.sel = null; afterChange(true);
+}
+function draft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ items: S.items, layout: S.layout, room: S.room, view: { ...S.view, mode: 'orbit' } })); } catch {} }
+const withMirror = items => { // older saves used estimated sizes
+  const m = items.find(i => i.id === 'mirror'), b = items.find(i => i.id === 'bowls');
+  if (m) { m.w = .78; m.h = 1.73; }
+  const rug = items.find(i => i.id === 'rug2'); if (rug) { rug.w = .9; rug.d = .9; }
+  if (b) { b.w = .3; b.d = .5; b.name = 'Dog feeder'; b.h = .15; delete b.soft; }
+  for (const id of ['plantTop', 'mirrorWall']) if (!items.some(i => i.id === id)) items.push(clone(BASE.find(x => x.id === id)));
+  return items;
+};
+function loadDraft() {
+  try {
+    const d = JSON.parse(localStorage.getItem(DRAFT_KEY)); if (!d) return;
+    S.items = withMirror(d.items); S.layout = d.layout; Object.assign(S.room, d.room); Object.assign(S.view, d.view);
+  } catch {}
+}
+function afterChange(sync3d) { renderAll(); if (sync3d) V.sync(); draft(); }
+function toast(msg) {
+  document.querySelector('.toast')?.remove();
+  const t = document.createElement('div'); t.className = 'toast'; t.role = 'status'; t.textContent = msg; document.body.append(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+// ---------- Moving things (shared by the plan and the 3D view)
+function placeItem(it, x, z) {
+  x = clamp(x, -.3, ROOM.W + .35); z = clamp(z, -.3, 5);
+  if (it.hang && z <= ROOM.D + .22 && x <= ROOM.W + .3) { // anything hung snaps to the nearest wall, facing the room
+    const step = v => S.snap ? Math.round(v / .05) * .05 : v, hw = it.w / 2 + .01;
+    const walls = [[z, 'n'], [ROOM.D - z, 's'], [x, 'w'], [ROOM.W - x, 'e']].sort((a, b) => a[0] - b[0]), side = walls[0][1];
+    if (side === 'n') { it.x = clamp(step(x), hw, ROOM.W - hw); it.z = .02; it.rot = 0; }
+    if (side === 's') { it.x = clamp(step(x), hw, ROOM.W - hw); it.z = ROOM.D - .02; it.rot = 180; }
+    if (side === 'w') { it.z = clamp(step(z), hw, ROOM.D - hw); it.x = .02; it.rot = 90; }
+    if (side === 'e') { it.z = clamp(step(z), hw, ROOM.D - hw); it.x = ROOM.W - .02; it.rot = 270; }
+    it.x = +it.x.toFixed(3); it.z = +it.z.toFixed(3); return;
+  }
+  if (S.snap) {
+    x = Math.round(x / .05) * .05; z = Math.round(z / .05) * .05;
+    it.x = x; it.z = z;
+    if (inRoom(it) && !it.rug && !it.onTop) {
+      if (it.id === 'bed') syncHead(S.items);
+      const b = it.id === 'bed' ? bedBox(S.items) : aabb(it), t = .07;
+      if (Math.abs(b.x0) < t) it.x -= b.x0 - .01; else if (Math.abs(b.x1 - ROOM.W) < t) it.x -= b.x1 - ROOM.W + .01;
+      if (Math.abs(b.z0) < t) it.z -= b.z0 - .01; else if (Math.abs(b.z1 - ROOM.D) < t) it.z -= b.z1 - ROOM.D + .01;
+    }
+  } else { it.x = x; it.z = z; }
+  it.x = +it.x.toFixed(3); it.z = +it.z.toFixed(3);
+}
+function turn(it, deg) { it.rot = ((Math.round(it.rot + deg) % 360) + 360) % 360; }
+function settle() { // anything marked onTop rests on the highest furniture under its centre
+  const surface = o => o.type === 'tvunit' ? .72 : o.stand || (o.type === 'chair' ? .52 : o.h);
+  for (const it of S.items) if (it.onTop) {
+    it.y = inRoom(it) ? Math.max(0, ...S.items.filter(o => o !== it && inRoom(o) && !o.rug && !o.wall && !o.onTop && distTo(o, it.x, it.z) <= 0).map(surface)) : 0;
+  }
+}
+function select(id) { if (S.sel === id && !S.group.length) return; S.group = []; S.sel = id; renderAll(); V.select(); }
+// Several objects: S.group holds them once there are two or more, S.sel stays the last one clicked
+const selected = () => S.group.length ? S.group : S.sel ? [S.sel] : [];
+const multi = () => S.group.length > 1;
+function toggleSelect(id) {
+  const cur = selected(), next = cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id];
+  S.group = next.length > 1 ? next : []; S.sel = next.at(-1) ?? null; renderAll(); V.select();
+}
+const groupStart = () => selected().map(id => { const i = item(id); return { i, x: i.x, z: i.z, rot: i.rot }; });
+function groupMove(st, dx, dz) {
+  if (S.snap) { dx = Math.round(dx / .05) * .05; dz = Math.round(dz / .05) * .05; }
+  for (const s of st) { if (s.i.hang) placeItem(s.i, s.x + dx, s.z + dz); else { s.i.x = +(s.x + dx).toFixed(3); s.i.z = +(s.z + dz).toFixed(3); } }
+}
+function groupTurn(st, deg) { // the whole group turns around its centre and keeps its arrangement
+  const cx = st.reduce((a, s) => a + s.x, 0) / st.length, cz = st.reduce((a, s) => a + s.z, 0) / st.length, c = Math.cos(rad(deg)), n = Math.sin(rad(deg));
+  for (const s of st) {
+    const dx = s.x - cx, dz = s.z - cz, x = cx + dx * c + dz * n, z = cz - dx * n + dz * c;
+    s.i.rot = ((Math.round(s.rot + deg) % 360) + 360) % 360;
+    if (s.i.hang) placeItem(s.i, x, z); else { s.i.x = +x.toFixed(3); s.i.z = +z.toFixed(3); }
+  }
+}
+function editAll(fn) { const b = snapshot(); fn(); markCustom(); commit(b); }
+function markCustom() { if (S.layout !== 'custom') { S.fromLayout = S.layout; S.layout = 'custom'; } }
+
+// ---------- Plan drawing
+const NS = 'http://www.w3.org/2000/svg', cm = v => Math.round(v * 100);
+const plan = $('plan');
+function shapeFor(it, w, d) {
+  const hw = w / 2, hd = d / 2;
+  const R = `<rect class="b" x="${-hw}" y="${-hd}" width="${w}" height="${d}" rx="1.5"/>`;
+  const C = `<ellipse class="b" rx="${hw}" ry="${hd}"/>`;
+  switch (it.type) {
+    case 'bed': return R + `<rect class="d" x="${-hw + 12}" y="${-hd + 8}" width="${w / 2 - 16}" height="34" rx="5"/><rect class="d" x="${4}" y="${-hd + 8}" width="${w / 2 - 16}" height="34" rx="5"/><rect class="f" x="${-hw + 6}" y="${hd - 72}" width="${w - 12}" height="68"/>`;
+    case 'headboard': return `<rect class="b hb" x="${-hw}" y="${-hd}" width="${w}" height="${d}" rx="1.5"/>`;
+    case 'rugRound': return C;
+    case 'plant': return (it.stand ? R : C) + `<ellipse class="g" rx="${it.stand ? 12.5 : hw * .62}" ry="${it.stand ? 12.5 : hd * .62}"/>`;
+    case 'lamp': return C + `<circle class="d" r="${Math.min(hw, hd) * .3}"/>`;
+    case 'chair': case 'chairSoft': return `<rect class="b" x="${-hw}" y="${-hd}" width="${w}" height="${d}" rx="${w / 3}"/><path class="d" d="M${-hw + 6} ${-hd + 8}H${hw - 6}"/>`;
+    case 'desk': return R + `<path class="d" d="M${-hw + 4} ${hd - 7}H${hw - 4}"/>`;
+    case 'tvunit': return R + `<rect class="f" x="${-hw * .9}" y="${-1.5}" width="${hw * 1.8}" height="3"/>`;
+    case 'capTower': return R + [1, 2].map(k => `<path class="d" d="M${-hw + w * k / 3} ${-hd}V${hd}"/>`).join('');
+    case 'shelf': return R + `<path class="d" d="M${-hw} ${-hd}L${hw} ${hd}M${hw} ${-hd}L${-hw} ${hd}"/>`;
+    default: return R;
+  }
+}
+function renderPlan(flagged) {
+  const W = ROOM.W * 100, D = ROOM.D * 100, T = 13, [w0, w1] = winZ().map(v => v * 100), dx = ROOM.doorX * 100, dw = ROOM.doorW * 100, cx = ROOM.closetX * 100, cw = ROOM.closetW * 100, cd = ROOM.closetD * 100;
+  let h = `<defs><pattern id="pg" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M50 0H0V50" fill="none" stroke="var(--line)" stroke-width=".5"/></pattern></defs>`;
+  // poché walls with the closet niche punched out
+  h += `<rect class="p-wall" x="${-T}" y="${-T}" width="${W + 2 * T}" height="${D + 2 * T}"/>`;
+  h += `<rect class="p-wall" x="${cx - T}" y="${-cd - T}" width="${cw + 2 * T}" height="${cd + T}"/>`;
+  h += `<rect class="p-floor" x="0" y="0" width="${W}" height="${D}"/><rect fill="url(#pg)" x="0" y="0" width="${W}" height="${D}"/>`;
+  h += `<rect class="p-floor" x="${cx}" y="${-cd}" width="${cw}" height="${cd + 1}"/>`;
+  h += `<rect class="p-floor" x="${dx}" y="${-T - 1}" width="${dw}" height="${T + 2}"/>`;
+  h += `<rect class="d p-dim" x="${cx + 3}" y="${-cd + 3}" width="42" height="${cd - 6}"/><path class="p-dim" d="M${cx + 48} ${-cd / 2}H${cx + cw - 4}"/>`;
+  h += `<text class="p-lbl" x="${cx + cw / 2 + 22}" y="${-cd / 2 - 5}" text-anchor="middle">${tr('CLOSET')}</text>`;
+  // door swing
+  h += `<path class="p-swing" d="M${dx} 0H${dx + dw}A${dw} ${dw} 0 0 1 ${dx} ${dw}Z"/><rect fill="var(--wall)" x="${dx - 2}" y="0" width="3.5" height="${dw}"/>`;
+  // window
+  h += `<rect class="p-win" x="${W}" y="${w0}" width="${T}" height="${w1 - w0}"/><path class="p-dim" d="M${W + T / 2} ${w0}V${w1}M${W} ${(w0 + w1) / 2}H${W + T}"/>`;
+  // dimensions
+  const tick = (x, y, v) => v ? `M${x} ${y - 4}V${y + 4}` : `M${x - 4} ${y}H${x + 4}`;
+  h += `<path class="p-dim" d="M0 ${-T - 78}H${W}${tick(0, -T - 78, 1)}${tick(W, -T - 78, 1)}"/><text class="p-txt" x="${W / 2}" y="${-T - 82}" text-anchor="middle">${W} cm</text>`;
+  h += `<path class="p-dim" d="M${-T - 12} 0V${D}${tick(-T - 12, 0, 0)}${tick(-T - 12, D, 0)}"/><text class="p-txt" transform="translate(${-T - 16} ${D / 2}) rotate(-90)" text-anchor="middle">${D} cm</text>`;
+  const fx = cx + cw;
+  h += `<path class="p-dim" d="M${fx} ${-T - 8}H${W}${tick(fx, -T - 8, 1)}${tick(W, -T - 8, 1)}"/><text class="p-txt" x="${(fx + W) / 2}" y="${-T - 12}" text-anchor="middle">${tr('{n} cm free', { n: W - fx })}</text>`;
+  h += `<text class="p-txt" x="${dx + dw / 2}" y="${-T - 12}" text-anchor="middle">${tr('door {n}', { n: dw })}</text>`;
+  h += `<path class="p-dim" d="M${W + T + 10} ${w0}V${w1}${tick(W + T + 10, w0, 0)}${tick(W + T + 10, w1, 0)}"/><text class="p-txt" transform="translate(${W + T + 22} ${(w0 + w1) / 2}) rotate(90)" text-anchor="middle">${tr('window {n}', { n: w1 - w0 })}</text>`;
+  // parking area
+  const py = D + 30;
+  h += `<text class="p-txt" x="0" y="${D + 24}">${tr('ceiling {n}', { n: cm(ROOM.Hhi) })}</text><text class="p-txt" x="${W}" y="${D + 24}" text-anchor="end">${tr('ceiling {n}', { n: cm(ROOM.Hlo) })}</text>`;
+  h += `<rect class="p-park" x="0" y="${py}" width="${W}" height="120" rx="6"/><text class="p-lbl" x="${W / 2}" y="${py + 14}" text-anchor="middle">${tr('OUTSIDE THE ROOM')}</text>`;
+  if (!S.items.some(i => isParked(i) && !i.spare)) h += `<text class="p-txt" x="${W / 2}" y="${py + 40}" text-anchor="middle">${tr('Drag furniture here to try the room without it')}</text>`;
+  // scale bar
+  h += `<path class="p-dim" d="M0 ${py + 136}H100${tick(0, py + 136, 1)}${tick(100, py + 136, 1)}"/><text class="p-txt" x="50" y="${py + 132}" text-anchor="middle">1 m</text>`;
+  // clearance zones
+  if (S.zones) for (const it of S.items) if (it.zone && inRoom(it)) {
+    h += `<rect class="p-zone" transform="translate(${it.x * 100} ${it.z * 100}) rotate(${-it.rot})" x="${-it.w * 50}" y="${it.d * 50}" width="${it.w * 100}" height="${it.zone * 100}"/>`;
+  }
+  // items: rugs first, then the rest
+  const isSel = i => selected().includes(i.attach || i.id), rank = i => isSel(i) ? 3 : i.onTop || i.hang ? 2 : i.rug ? 0 : 1, order = [...S.items].sort((a, b) => rank(a) - rank(b));
+  let labels = '';
+  for (const it of order) {
+    const w = it.w * 100, d = it.d * 100, cls = ['pi', it.rug && 'rug', isSel(it) && 'sel', flagged.has(it.id) && !isParked(it) && 'bad'].filter(Boolean).join(' ');
+    h += `<g class="${cls}" data-id="${it.attach || it.id}" transform="translate(${it.x * 100} ${it.z * 100}) rotate(${-it.rot})"><title>${esc(nm(it))} ${cm(it.w)}×${cm(it.d)}</title>${shapeFor(it, Math.max(w, 3), Math.max(d, 3))}</g>`;
+    const b = aabb(it), bw = (b.x1 - b.x0) * 100, bh = (b.z1 - b.z0) * 100;
+    if (it.rug || it.attach || (it.wall && !isParked(it) && !isSel(it))) continue;
+    if (bw > 44 && bh > 26 || isSel(it) || it.spare && isParked(it)) {
+      const label = nm(it), short = bw < 90 ? label.split(/[ +]/)[0] : label;
+      labels += `<text class="pi-t" x="${it.x * 100}" y="${it.z * 100 + (bh > 40 ? -1 : 3)}">${esc(short)}</text>`;
+      if (bh > 40) labels += `<text class="pi-s" x="${it.x * 100}" y="${it.z * 100 + 8}">${cm(it.w)}×${cm(it.d)}</text>`;
+    }
+  }
+  h += labels;
+  const si = item(S.sel);
+  if (multi()) {
+    const bs = selected().map(id => aabb(item(id))), x0 = Math.min(...bs.map(b => b.x0)) * 100, x1 = Math.max(...bs.map(b => b.x1)) * 100, z0 = Math.min(...bs.map(b => b.z0)) * 100, z1 = Math.max(...bs.map(b => b.z1)) * 100;
+    h += `<rect class="p-group" x="${x0 - 5}" y="${z0 - 5}" width="${x1 - x0 + 10}" height="${z1 - z0 + 10}"/><circle class="p-handle" data-handle="1" cx="${(x0 + x1) / 2}" cy="${z0 - 16}" r="6.5"><title>Drag to turn</title></circle>`;
+  } else if (si) {
+    const { uz } = axes(si), r = si.d * 50 + 15, hx = si.x * 100 + uz[0] * r, hz = si.z * 100 + uz[1] * r;
+    h += `<path class="p-dim" d="M${si.x * 100 + uz[0] * si.d * 50} ${si.z * 100 + uz[1] * si.d * 50}L${hx} ${hz}"/><circle class="p-handle" data-handle="1" cx="${hx}" cy="${hz}" r="6.5"><title>Drag to turn</title></circle>`;
+  }
+  plan.innerHTML = h;
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+// plan pointer handling lives on the svg so re-rendering children doesn't break a drag
+let drag = null, lastTap = { id: null, t: 0 };
+const toPlan = e => { const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(plan.getScreenCTM().inverse()); return { x: p.x / 100, z: p.y / 100 }; };
+plan.addEventListener('pointerdown', e => {
+  const handle = e.target.closest('[data-handle]'), g = e.target.closest('[data-id]'), p = toPlan(e);
+  const meta = e.metaKey || e.ctrlKey;
+  if (handle && multi()) { const st = groupStart(), cx = st.reduce((a, q) => a + q.x, 0) / st.length, cz = st.reduce((a, q) => a + q.z, 0) / st.length; drag = { kind: 'turnGroup', st, cx, cz, a0: Math.atan2(p.x - cx, p.z - cz), before: snapshot() }; }
+  else if (handle) { drag = { kind: 'turn', it: item(S.sel), before: snapshot() }; }
+  else if (g) {
+    const it = item(g.dataset.id), now = performance.now();
+    if (meta) { lastTap = { id: null, t: 0 }; toggleSelect(it.id); e.preventDefault(); return; }
+    if (lastTap.id === it.id && now - lastTap.t < 320) { lastTap = { id: null, t: 0 }; renameItem(it.id); return; }
+    lastTap = { id: it.id, t: now };
+    if (multi() && S.group.includes(it.id)) drag = { kind: 'moveGroup', id: it.id, st: groupStart(), px: p.x, pz: p.z, before: snapshot(), moved: false };
+    else { select(it.id); drag = { kind: 'move', it, ox: it.x - p.x, oz: it.z - p.z, before: snapshot(), moved: false }; }
+  } else { if (!meta) select(null); return; }
+    plan.setPointerCapture(e.pointerId); e.preventDefault();
+});
+plan.addEventListener('pointermove', e => {
+  if (!drag) return; const p = toPlan(e), it = drag.it;
+  if (drag.kind === 'moveGroup') { groupMove(drag.st, p.x - drag.px, p.z - drag.pz); drag.moved = true; }
+  else if (drag.kind === 'turnGroup') { let a = (Math.atan2(p.x - drag.cx, p.z - drag.cz) - drag.a0) * 180 / Math.PI; if (S.snap) a = Math.round(a / 15) * 15; groupTurn(drag.st, a); drag.moved = true; }
+  else if (drag.kind === 'move') { placeItem(it, p.x + drag.ox, p.z + drag.oz); drag.moved = true; }
+  else { let a = Math.atan2(p.x - it.x, p.z - it.z) * 180 / Math.PI; if (S.snap) a = Math.round(a / 15) * 15; it.rot = (Math.round(a) + 360) % 360; drag.moved = true; }
+  markCustom(); renderAll(); V.sync();
+});
+const endDrag = () => { if (!drag) return; const d = drag; drag = null; if (d.moved) commit(d.before); else if (d.kind === 'moveGroup') select(d.id); else if (d.before !== snapshot()) { S.layout = JSON.parse(d.before).layout; renderAll(); } };
+plan.addEventListener('contextmenu', e => { if (e.ctrlKey) e.preventDefault(); }); // Ctrl-click on a Mac
+plan.addEventListener('pointerup', endDrag); plan.addEventListener('pointercancel', endDrag);
+
+// ---------- Side panel
+const setSeg = (el, v) => el.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === String(v))));
+function renderAll() {
+  syncHead(S.items);
+  settle();
+  if (S.group.length) { S.group = S.group.filter(item); if (S.group.length < 2) { S.sel = S.group[0] ?? null; S.group = []; } }
+  const A = analyse();
+  renderPlan(A.flagged);
+  $('subtitle').textContent = tr('380 × 370 cm · ceiling {a} to {b} cm', { a: cm(ROOM.Hhi), b: cm(ROOM.Hlo) });
+  const tabs = [...Object.entries(LAYOUTS).map(([k, l]) => `<button class="tab" data-k="${k}" aria-pressed="${S.layout === k}">${tr(l.tab)}${l.tag ? `<small>${tr(l.tag)}</small>` : ''}</button>`)];
+  if (S.layout === 'custom') tabs.push(`<button class="tab" aria-pressed="true">${tr('My edit')}</button>`);
+  $('tabs').innerHTML = tabs.join('');
+  const L = LAYOUTS[S.layout];
+  $('layName').textContent = tr(L ? L.title : 'My edit');
+  $('layText').textContent = L ? tr(L.text) : tr('Your changes, starting from "{a}". The checks below update as you move things. Your edits stay after a reload. Click Today or a lettered layout to start over.', { a: tr(LAYOUTS[S.fromLayout]?.tab || 'a saved layout') });
+  $('layNotes').innerHTML = L ? L.notes.map(([k, t]) => `<li><i class="${k === 'ok' ? 'ok' : 'no'}">${k === 'ok' ? '✓' : '!'}</i><span>${tr(t)}</span></li>`).join('') : '';
+  $('stFree').textContent = A.free.toFixed(1) + ' m²';
+  $('stRoute').textContent = A.tightest >= 1.2 ? '90+ cm' : cm(A.tightest) + ' cm';
+  $('stMoves').textContent = A.moved;
+  $('stWin').textContent = Math.round(A.winClear * 100) + '%';
+  renderBed();
+  $('chkTitle').textContent = tr('Checks ({n})', { n: A.list.length });
+  $('checks').innerHTML = A.list.length ? A.list.map((c, i) => `<button class="check ${c.level}" data-i="${i}"><span>${esc(c.text)}</span></button>`).join('') : `<div class="clear">${tr('Everything fits. Door, closet, window and routes are clear.')}</div>`;
+  $('checks').onclick = e => { const b = e.target.closest('[data-i]'); if (b) { const id = A.list[+b.dataset.i].ids[0]; if (id) select(id); } };
+  $('undo').disabled = !S.past.length; $('redo').disabled = !S.future.length;
+  const it = item(S.sel), ins = $('inspector'); ins.hidden = !it;
+  const many = multi();
+  $('itName').hidden = many; document.querySelector('#inspector .dims').hidden = many; $('itCopy').hidden = many;
+  $('selCount').hidden = !many; $('selCount').textContent = tr('{n} objects selected', { n: S.group.length });
+  $('itYRow').hidden = !it?.wall || many;
+  if (it?.wall) { $('itY').max = Math.max(0, cm(ceilAt(it.x) - it.h)); $('itY').value = cm(it.y || 0); $('itYO').textContent = cm(it.y || 0); }
+  if (it) {
+    const keep = (id, v) => { if (document.activeElement !== $(id)) $(id).value = v; };
+    keep('itName', nm(it)); keep('itW', cm(it.w)); keep('itD', cm(it.d)); keep('itH', cm(it.h)); keep('itR', it.rot);
+    $('itPark').textContent = tr(isParked(it) ? 'Bring back' : 'Move out');
+  }
+  const v = S.view;
+  setSeg($('langSeg'), LANG); setSeg($('modeSeg'), v.mode); setSeg($('timeSeg'), v.time); setSeg($('spotSeg'), v.mode === 'walk' ? v.spot : ''); setSeg($('eyeSeg'), v.eye); setSeg($('qualSeg'), v.quality);
+  $('spotSeg').hidden = v.mode !== 'walk';
+  renderOpenings();
+  $('doorR').value = v.door; $('doorO').textContent = v.door + '%'; $('blindR').value = v.blind; $('blindO').textContent = v.blind + '%'; $('bedding').checked = v.bedding;
+  $('snap').setAttribute('aria-pressed', S.snap); $('zones').setAttribute('aria-pressed', S.zones);
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  $('hint').innerHTML = tr(v.mode === 'walk'
+    ? (coarse ? 'Use the arrows to walk. Drag to look around.' : '<kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> to walk, arrow keys or drag to look, <kbd>Shift</kbd> to hurry.')
+    : coarse ? 'Drag empty space to orbit, pinch to zoom. Drag furniture to move it.' : 'Drag empty space to orbit, scroll to zoom. Drag furniture to move it.');
+  $('view').classList.toggle('walking', v.mode === 'walk');
+}
+// Every layout with every bed setup, worked out once from the presets
+let compare = null;
+function buildCompare() {
+  const keep = S.items; compare = {};
+  for (const k of Object.keys(LAYOUTS)) compare[k] = SETUPS.map(([fr, hd]) => {
+    S.items = layoutItems(k, fr, hd); applyBed(S.items, fr, hd); const A = analyse();
+    return { win: A.winClear, bad: A.list.filter(c => c.level === 'bad').length, warn: A.list.filter(c => c.level === 'warn').length, route: A.tightest, list: A.list.map(c => c.text) };
+  });
+  S.items = keep;
+}
+function renderBed() {
+  const s = bedSetup(); setSeg($('frameSeg'), s.frame); setSeg($('headSeg'), s.head);
+  $('headDims').hidden = s.head === 'none';
+  if (s.dims) { if (document.activeElement !== $('headW')) $('headW').value = cm(s.dims.w); if (document.activeElement !== $('headH')) $('headH').value = cm(s.dims.h); }
+  if (!compare) buildCompare();
+  const cols = SETUPS.map(x => `<th scope="col">${tr(x[2]).replace(', ', '<br>')}</th>`).join('');
+  const rows = Object.keys(LAYOUTS).map(k => `<tr><th scope="row">${tr(LAYOUTS[k].tab).split(' · ')[0]}</th>${compare[k].map((c, i) => {
+    const on = S.layout === k && s.frame === SETUPS[i][0] && s.head === SETUPS[i][1], cls = c.bad ? 'bad' : c.warn > 2 || c.win < .7 ? 'warn' : 'good', n = c.bad + c.warn;
+    return `<td><button class="cell ${cls}" data-l="${k}" data-s="${i}" aria-pressed="${on}" title="${esc(c.list.join('. ') || tr('No issues'))}"><b>${Math.round(c.win * 100)}%</b><span>${tr(n === 1 ? '{n} issue' : '{n} issues', { n })}</span></button></td>`;
+  }).join('')}</tr>`).join('');
+  $('compare').innerHTML = `<thead><tr><th></th>${cols}</tr></thead><tbody>${rows}</tbody>`;
+}
+function setBed(frame, head) {
+  const b = snapshot();
+  if (LAYOUTS[S.layout]) { S.items = layoutItems(S.layout, frame, head); if (!item(S.sel)) S.sel = null; } // presets re-place what the new bed needs
+  applyBed(S.items, frame, head); commit(b);
+}
+function renderOpenings() {
+  $('blindBtn').textContent = tr(S.view.blind > 50 ? 'Open blind' : 'Close blind');
+  $('doorBtn').textContent = tr(S.view.door > 50 ? 'Close door' : 'Open door');
+}
+function summary() {
+  const A = analyse(), L = LAYOUTS[S.layout], s = bedSetup(), frame = tr(FRAMES[s.frame].label), lines = [
+    tr('Room 3.80 × 3.70 m, ceiling sloping from {a} m to {b} m. Layout: {c}.', { a: ROOM.Hhi.toFixed(2), b: ROOM.Hlo.toFixed(2), c: tr(L ? L.title : 'My edit') }),
+    s.dims ? tr('Bed: {a} frame, headboard {b} wide × {c} tall.', { a: frame, b: cm(s.dims.w) + ' cm', c: cm(s.dims.h) + ' cm' }) : tr('Bed: {a} frame, no headboard.', { a: frame }),
+    tr('Window {a}% clear, free floor {b} m², tightest route {c} cm.', { a: Math.round(A.winClear * 100), b: A.free.toFixed(1), c: cm(A.tightest) }), ''];
+  for (const it of S.items) if (!it.wall && !it.attach) { const b = aabb(it); lines.push(isParked(it) ? tr('{a}: out of the room', { a: nm(it) }) : tr('{a} ({b}): {c} cm from the TV wall, {d} cm from the door wall', { a: nm(it), b: `${cm(it.w)}×${cm(it.d)}`, c: cm(b.x0), d: cm(b.z0) })); }
+  if (A.list.length) lines.push('', tr('To check:'), ...A.list.map(c => '- ' + c.text));
+  return lines.join('\n');
+}
+
+// ---------- Controls
+function useLayout(k) {
+  const b = snapshot(), cur = bedSetup(); S.items = layoutItems(k, cur.frame, cur.head); applyBed(S.items, cur.frame, cur.head, cur.dims); S.layout = k; if (!item(S.sel)) S.sel = null;
+  if (b === snapshot()) return; S.past.push(b); S.future = []; afterChange(true);
+}
+$('tabs').onclick = e => { const b = e.target.closest('[data-k]'); if (b) useLayout(b.dataset.k); };
+$('undo').onclick = () => travel(S.past, S.future);
+$('redo').onclick = () => travel(S.future, S.past);
+$('share').onclick = async () => {
+  try { await navigator.clipboard.writeText(summary()); toast(tr('Layout summary copied')); }
+  catch { toast(tr('Copying is blocked here. Try again from the full page.')); }
+};
+$('snap').onclick = () => { S.snap = !S.snap; renderAll(); };
+$('zones').onclick = () => { S.zones = !S.zones; renderAll(); };
+$('maxPlan').onclick = e => { const on = $('desk').classList.toggle('plan-max'); e.currentTarget.setAttribute('aria-pressed', on); V.resize(); };
+const bindSeg = (id, fn) => $(id).onclick = e => { const b = e.target.closest('button'); if (b) fn(b.dataset.v); };
+bindSeg('modeSeg', v => { S.view.mode = v; renderAll(); V.setMode(); });
+bindSeg('spotSeg', v => { S.view.spot = v; renderAll(); V.goTo(v); });
+bindSeg('timeSeg', v => { S.view.time = v; renderAll(); V.applyView(); draft(); });
+bindSeg('eyeSeg', v => { S.view.eye = +v; renderAll(); V.applyView(); draft(); });
+bindSeg('qualSeg', v => { S.view.quality = v; renderAll(); V.applyView(); draft(); });
+bindSeg('frameSeg', v => setBed(v, bedSetup().head));
+bindSeg('headSeg', v => setBed(bedSetup().frame, v));
+['headW', 'headH'].forEach(id => $(id).onchange = () => {
+  const hd = item('head'), v = parseFloat($(id).value); if (!hd || !(v > 0)) return;
+  const b = snapshot(); hd[id === 'headW' ? 'w' : 'h'] = v / 100; compare = null; commit(b);
+});
+$('compare').onclick = e => {
+  const c = e.target.closest('[data-l]'); if (!c) return; const b = snapshot(), [fr, hd] = SETUPS[+c.dataset.s];
+  S.items = layoutItems(c.dataset.l, fr, hd); applyBed(S.items, fr, hd); S.layout = c.dataset.l; if (!item(S.sel)) S.sel = null;
+  if (b !== snapshot()) { S.past.push(b); S.future = []; afterChange(true); }
+};
+$('doorR').oninput = e => { S.view.door = +e.target.value; $('doorO').textContent = S.view.door + '%'; renderOpenings(); V.applyView(); draft(); };
+$('blindR').oninput = e => { S.view.blind = +e.target.value; $('blindO').textContent = S.view.blind + '%'; renderOpenings(); V.applyView(); draft(); };
+$('blindBtn').onclick = () => { S.view.blind = S.view.blind > 50 ? 0 : 100; renderAll(); V.applyView(); draft(); };
+$('doorBtn').onclick = () => { S.view.door = S.view.door > 50 ? 0 : 100; renderAll(); V.applyView(); draft(); };
+$('bedding').onchange = e => { S.view.bedding = e.target.checked; V.applyView(); draft(); };
+const edit = fn => { const it = item(S.sel); if (!it) return; const b = snapshot(); fn(it); markCustom(); commit(b); };
+$('itName').onchange = e => edit(it => it.name = e.target.value.trim() || it.name);
+[['itW', 'w'], ['itD', 'd'], ['itH', 'h']].forEach(([id, k]) => $(id).onchange = e => edit(it => { const v = parseFloat(e.target.value); if (v > 0) it[k] = v / 100; }));
+$('itR').onchange = e => edit(it => { const v = parseFloat(e.target.value); if (!isNaN(v)) it.rot = ((Math.round(v) % 360) + 360) % 360; });
+let yBefore = null;
+$('itY').oninput = e => { const it = item(S.sel); if (!it) return; yBefore ??= snapshot(); it.y = +e.target.value / 100; markCustom(); renderAll(); V.sync(); };
+$('itY').onchange = () => { if (yBefore !== null) { const b = yBefore; yBefore = null; commit(b); } };
+const turnPick = deg => multi() ? editAll(() => groupTurn(groupStart(), deg)) : edit(it => turn(it, deg));
+$('itTurn').onclick = () => turnPick(90);
+$('itTurn45').onclick = () => turnPick(45);
+$('itCopy').onclick = () => edit(it => { const n = { ...clone(it), id: 'c' + Date.now().toString(36), x: it.x + .2, z: it.z + .2 }; S.items.push(n); S.sel = n.id; });
+const parkOne = it => {
+  if (isParked(it)) { it.x = 1.2; it.z = 1; if (it.hang) placeItem(it, 3.1, .1); } else { const n = S.items.filter(isParked).length; it.x = .5 + (n % 4) * .9; it.z = ROOM.D + .75 + Math.floor(n / 4) * .5; }
+};
+$('itPark').onclick = () => multi() ? editAll(() => selected().forEach(id => parkOne(item(id)))) : edit(parkOne);
+$('itDel').onclick = async () => {
+  const many = multi(), one = item(S.sel); if (!one) return;
+  if (!await ask(many ? tr('Delete {n} objects?', { n: S.group.length }) : tr('Delete "{a}"?', { a: nm(one) }), tr(many ? 'Are you sure you want to delete these objects? You can bring them back with Undo.' : 'Are you sure you want to delete this object? You can bring it back with Undo.'), tr('Yes, delete'), true)) return;
+  editAll(() => { const gone = selected(); S.items = S.items.filter(o => !gone.includes(o.id) && !gone.includes(o.attach)); S.group = []; S.sel = null; });
+};
+const renderCatalog = () => { $('catalog').innerHTML = CATALOG.map((c, i) => `<button class="chip" data-i="${i}">${tr(c.name)}</button>`).join(''); };
+renderCatalog();
+$('catalog').onclick = e => {
+  const b = e.target.closest('[data-i]'); if (!b) return; const before = snapshot(), c = CATALOG[+b.dataset.i];
+  const n = { ...clone(c), id: 'n' + Date.now().toString(36), x: 1.35, z: 1, rot: 0 }; S.items.push(n); S.sel = n.id; markCustom(); commit(before); toast(tr('{a} added. Drag it into place.', { a: tr(c.name) }));
+};
+addEventListener('keydown', e => {
+  const typing = /INPUT|TEXTAREA/.test(document.activeElement?.tagName || '') && document.activeElement.type !== 'range' && document.activeElement.type !== 'checkbox';
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !typing) { e.preventDefault(); e.shiftKey ? travel(S.future, S.past) : travel(S.past, S.future); return; }
+  if (typing || S.view.mode === 'walk') return;
+  const it = item(S.sel); if (!it) return;
+  const step = e.shiftKey ? .01 : .05, m = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+  if (m) { e.preventDefault(); editAll(() => selected().forEach(id => { const i = item(id); i.x = +(i.x + m[0]).toFixed(3); i.z = +(i.z + m[1]).toFixed(3); })); }
+  else if (e.key.toLowerCase() === 'r') turnPick(e.shiftKey ? 45 : 90);
+  else if (e.key === 'Escape') select(null);
+});
+
+// ---------- Saved layouts: shared store when available, this browser otherwise
+let store = null;
+function renderSaved() {
+  $('saved').innerHTML = S.saved.map(s => `<li><button class="open" data-open="${esc(s.id)}">${esc(s.name)}</button><button class="btn danger" data-del="${esc(s.id)}" aria-label="${esc(tr('Delete {a}', { a: s.name }))}">${tr('Delete')}</button></li>`).join('');
+  $('savedNote').textContent = (S.saved.length ? '' : tr('Nothing saved yet. ')) + tr(store ? 'Layouts save to this page, so they follow you to other devices.' : 'Layouts save in this browser only.');
+}
+function readLocalSaved() { try { return JSON.parse(localStorage.getItem(SAVED_KEY)) || []; } catch { return []; } }
+function writeLocalSaved() { try { localStorage.setItem(SAVED_KEY, JSON.stringify(S.saved)); } catch {} }
+async function connectStore() {
+  S.saved = readLocalSaved(); renderSaved();
+  try {
+    const db = await window.claude?.use?.('db'); if (!db) return;
+    store = db.collection('layouts'); renderSaved();
+    store.onSnapshot(q => {
+      S.saved = q.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.at || 0) - (a.at || 0)); renderSaved();
+    }, () => { store = null; S.saved = readLocalSaved(); renderSaved(); });
+  } catch { store = null; }
+}
+function ask(title, text, yes, danger, value) { // resolves true only on the yes button; Esc and No both cancel
+  const d = $('ask'), input = $('askInput'), naming = value !== undefined;
+  $('askTitle').textContent = title; $('askText').textContent = text; $('askYes').textContent = yes; $('askYes').className = danger ? 'btn danger-fill' : 'btn primary';
+  $('askNo').textContent = naming ? tr('Cancel') : 'No'; input.hidden = !naming; input.value = naming ? value : '';
+  d.showModal(); if (naming) { input.focus(); input.select(); } else $('askNo').focus();
+  return new Promise(res => { askDone = res; });
+}
+async function renameItem(id) {
+  const it = item(id); if (!it) return; select(id);
+  const now = nm(it);
+  if (!await ask(tr('Rename "{a}"', { a: now }), tr('Type a new name for this object.'), tr('Save'), false, now)) return;
+  const name = $('askInput').value.trim();
+  if (name && name !== now) edit(i => { i.name = name; });
+}
+let askDone = null;
+const answer = v => { const f = askDone; askDone = null; if ($('ask').open) $('ask').close(); f?.(v); };
+$('askNo').onclick = () => answer(false);
+$('askYes').onclick = () => answer(true);
+$('askInput').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); answer(true); } };
+$('ask').addEventListener('close', () => { if (!$('ask').open) answer(false); }); // Esc counts as No
+$('saveForm').onsubmit = async e => {
+  e.preventDefault(); const name = $('saveName').value.trim() || tr('Layout {n}', { n: S.saved.length + 1 });
+  const same = S.saved.find(x => x.name.trim().toLowerCase() === name.toLowerCase());
+  if (same && !await ask(tr('Replace "{a}"?', { a: same.name }), tr('A layout with this name already exists. Saving will replace it with what is on screen now.'), tr('Yes, replace'))) return;
+  const rec = { name, at: Date.now(), items: clone(S.items), room: clone(S.room) };
+  $('saveName').value = '';
+  if (store) {
+    try { if (same) await store.doc(same.id).set(rec); else await store.add(rec); toast(tr('Saved "{a}" to this page', { a: name })); return; } catch { store = null; }
+  }
+  S.saved = S.saved.filter(x => x !== same); S.saved.unshift({ id: same?.id || 'l' + Date.now().toString(36), ...rec }); writeLocalSaved(); renderSaved(); toast(tr('Saved "{a}" in this browser', { a: name }));
+};
+$('saved').onclick = async e => {
+  const open = e.target.dataset?.open, del = e.target.dataset?.del;
+  if (open) {
+    const s = S.saved.find(x => x.id === open); if (!s) return; const b = snapshot();
+    S.items = withMirror(clone(s.items)); Object.assign(S.room, s.room); S.fromLayout = null; S.layout = 'custom'; S.sel = null; S.past.push(b); S.future = []; afterChange(true); V.rebuildShell();
+  } else if (del) {
+    const gone = S.saved.find(x => x.id === del); if (!gone) return;
+    if (!await ask(tr('Delete "{a}"?', { a: gone.name }), tr("Are you sure you want to delete this layout? This can't be undone."), tr('Yes, delete'), true)) return;
+    const key = l => JSON.stringify(l.map(i => [i.id, i.x, i.z, i.rot]));
+    if (S.layout === 'custom' && key(gone.items) === key(S.items)) useLayout('now'); // deleting what's on screen returns to today
+    if (store) { try { await store.doc(del).delete(); return; } catch {} }
+    S.saved = S.saved.filter(x => x.id !== del); writeLocalSaved(); renderSaved();
+  }
+};
+
+// ---------- 3D view. The page still works as a plan if three.js can't load.
+const V = { sync() {}, select() {}, setMode() {}, goTo() {}, applyView() {}, rebuildShell() {}, resize() {} };
+
+async function start3D() {
+  const host = $('stage');
+  let THREE, Reflector;
+  try {
+    THREE = await import('three');
+    ({ Reflector } = await import('three/addons/objects/Reflector.js'));
+  } catch { host.innerHTML = `<div class="fail">${tr('The 3D library could not load. The floor plan and checks still work.')}</div>`; return; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); }
+  catch { host.innerHTML = `<div class="fail">${tr('This browser has WebGL turned off, so the 3D view is unavailable. The floor plan and checks still work.')}</div>`; return; }
+
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  host.append(renderer.domElement);
+  if (matchMedia('(pointer: coarse)').matches) $('view').classList.add('touch');
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(46, 1, .05, 60);
+  const shell = new THREE.Group(), furn = new THREE.Group();
+  scene.add(shell, furn);
+  const W = ROOM.W, D = ROOM.D, T = .14;
+  let dirty = true; const touch = () => { dirty = true; };
+
+  // ---- procedural textures
+  const rng = seed => { let a = 0; for (const c of String(seed)) a = (a * 31 + c.charCodeAt(0)) | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+  function tex(size, draw, rx = 1, ry = 1, color = true) {
+    const c = document.createElement('canvas'); c.width = c.height = size; draw(c.getContext('2d'), size);
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry);
+    t.anisotropy = renderer.capabilities.getMaxAnisotropy(); if (color) t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+  const noise = (g, s, n, a, r = rng('n')) => { for (let i = 0; i < n; i++) { g.fillStyle = `rgba(${r() > .5 ? '255,255,255' : '0,0,0'},${a * r()})`; const q = 1 + r() * 3; g.fillRect(r() * s, r() * s, q, q); } };
+  const parquetTex = tex(1024, (g, s) => {
+    const r = rng('parquet'), n = 8, q = s / n, sl = 6, tones = ['#9a5a2c', '#a9672f', '#8a4d25', '#b57539', '#7c4422', '#a05f30'];
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) for (let k = 0; k < sl; k++) {
+      g.fillStyle = tones[(r() * tones.length) | 0]; const hz = (i + j) % 2 === 0, w = q / sl;
+      if (hz) g.fillRect(i * q, j * q + k * w, q, w); else g.fillRect(i * q + k * w, j * q, w, q);
+      g.strokeStyle = 'rgba(40,20,8,.35)'; g.lineWidth = 1;
+      if (hz) g.strokeRect(i * q, j * q + k * w, q, w); else g.strokeRect(i * q + k * w, j * q, w, q);
+      g.strokeStyle = 'rgba(50,25,10,.12)';
+      for (let m = 0; m < 3; m++) { g.beginPath(); if (hz) { const y = j * q + (k + r()) * w; g.moveTo(i * q, y); g.lineTo(i * q + q, y + r() * 2); } else { const x = i * q + (k + r()) * w; g.moveTo(x, j * q); g.lineTo(x + r() * 2, j * q + q); } g.stroke(); }
+    }
+  }, 1, 1);
+  const stuccoBump = tex(512, (g, s) => { g.fillStyle = '#808080'; g.fillRect(0, 0, s, s); noise(g, s, 26000, .55); }, 5, 5, false);
+  const wallBump = tex(512, (g, s) => { g.fillStyle = '#808080'; g.fillRect(0, 0, s, s); noise(g, s, 9000, .14); }, 3, 3, false);
+  const woodTex = (a, b, seed) => tex(512, (g, s) => {
+    const r = rng(seed); g.fillStyle = a; g.fillRect(0, 0, s, s);
+    for (let i = 0; i < 240; i++) { g.strokeStyle = b; g.globalAlpha = .08 + r() * .22; g.lineWidth = .6 + r() * 2.4; const y = r() * s; g.beginPath(); g.moveTo(0, y); g.bezierCurveTo(s * .3, y + r() * 16 - 8, s * .7, y + r() * 16 - 8, s, y); g.stroke(); }
+    g.globalAlpha = 1;
+  });
+  const fuzzy = (hex, seed) => tex(256, (g, s) => { g.fillStyle = hex; g.fillRect(0, 0, s, s); noise(g, s, 12000, .22, rng(seed)); }, 3, 3);
+  const jute = tex(256, (g, s) => { g.fillStyle = '#a98f64'; g.fillRect(0, 0, s, s); const r = rng('j'); for (let y = 0; y < s; y += 6) { g.strokeStyle = r() > .5 ? '#8f7650' : '#bda67c'; g.lineWidth = 3; g.beginPath(); g.moveTo(0, y); for (let x = 0; x <= s; x += 16) g.lineTo(x, y + (x / 16 % 2) * 2); g.stroke(); } }, 3, 3);
+  const juteRound = (() => { const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d'), r = rng('jr'); g.fillStyle = '#a98f64'; g.fillRect(0, 0, 512, 512); for (let q = 4; q < 256; q += 5) { g.strokeStyle = r() > .5 ? '#8f7650' : '#c0a97f'; g.lineWidth = 3.5; g.beginPath(); g.arc(256, 256, q, 0, 7); g.stroke(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+  const checker = tex(256, (g, s) => { const q = s / 4; for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) { g.fillStyle = (i + j) % 2 ? '#24321f' : '#ece6d6'; g.fillRect(i * q, j * q, q, q); } noise(g, s, 7000, .2); });
+  const floral = tex(256, (g, s) => { const r = rng('fl'); g.fillStyle = '#b8935f'; g.fillRect(0, 0, s, s); for (let i = 0; i < 70; i++) { g.fillStyle = ['#e9dcc0', '#6e4f2b', '#d9bf8c'][i % 3]; g.beginPath(); g.ellipse(r() * s, r() * s, 6 + r() * 10, 4 + r() * 6, r() * 3, 0, 7); g.fill(); } });
+  const tuftTex = (() => { const c = document.createElement('canvas'); c.width = 1024; c.height = 384; const g = c.getContext('2d'); g.fillStyle = '#8a6a55'; g.fillRect(0, 0, 1024, 384); noise(g, 1024, 30000, .12, rng('tuft')); g.strokeStyle = 'rgba(45,28,18,.65)'; g.lineWidth = 3; const q = 128; for (let i = -1; i < 9; i++) { g.beginPath(); g.moveTo(i * q, 192); g.lineTo(i * q + q / 2, 80); g.lineTo(i * q + q, 192); g.lineTo(i * q + q / 2, 304); g.closePath(); g.stroke(); g.beginPath(); g.moveTo(i * q + q / 2, 80); g.lineTo(i * q + q / 2, 0); g.moveTo(i * q + q / 2, 304); g.lineTo(i * q + q / 2, 384); g.stroke(); g.fillStyle = '#5a4030'; [[q / 2, 80], [q / 2, 304], [0, 192]].forEach(([x, y]) => { g.beginPath(); g.arc(i * q + x, y, 7, 0, 7); g.fill(); }); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+  const artTex = (() => { const c = document.createElement('canvas'); c.width = 512; c.height = 368; const g = c.getContext('2d'); const gr = g.createRadialGradient(330, 110, 20, 300, 180, 330); gr.addColorStop(0, '#6b5a43'); gr.addColorStop(.5, '#2b2620'); gr.addColorStop(1, '#100e0c'); g.fillStyle = gr; g.fillRect(0, 0, 512, 368); g.fillStyle = '#c8b58a'; g.beginPath(); g.ellipse(240, 270, 44, 36, 0, 0, 7); g.fill(); g.fillStyle = '#1a1612'; g.beginPath(); g.arc(224, 266, 9, 0, 7); g.arc(256, 266, 9, 0, 7); g.fill(); g.fillStyle = '#8c7a55'; g.fillRect(320, 288, 120, 26); g.fillStyle = '#7a2f26'; g.beginPath(); g.arc(120, 240, 30, 0, 7); g.fill(); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+  function outsideTex(evening) {
+    const c = document.createElement('canvas'); c.width = 2048; c.height = 1024; const g = c.getContext('2d'), r = rng('out');
+    const sky = g.createLinearGradient(0, 0, 0, 640);
+    if (evening) { sky.addColorStop(0, '#16233f'); sky.addColorStop(.7, '#46466b'); sky.addColorStop(1, '#c0794f'); } else { sky.addColorStop(0, '#d4e4ee'); sky.addColorStop(1, '#f6f5ee'); }
+    g.fillStyle = sky; g.fillRect(0, 0, 2048, 1024);
+    const dim = evening ? .42 : 1, col = (R, G, B) => `rgb(${R * dim | 0},${G * dim | 0},${B * dim | 0})`;
+    const house = (x, y, w, h, wall, roof) => {
+      g.fillStyle = wall; g.fillRect(x, y, w, h); g.fillStyle = roof; g.beginPath(); g.moveTo(x - 24, y); g.lineTo(x + w * .5, y - 70); g.lineTo(x + w + 24, y); g.fill();
+      for (let i = 0; i < 3; i++) { g.fillStyle = evening && r() > .35 ? '#f2c168' : col(70, 78, 88); g.fillRect(x + 30 + i * (w / 3), y + 40, w / 5, 70); }
+    };
+    house(160, 450, 460, 300, col(226, 224, 216), col(186, 70, 54));
+    house(760, 500, 380, 260, col(238, 236, 230), col(170, 62, 50));
+    house(1300, 430, 520, 320, col(214, 208, 196), col(192, 80, 58));
+    g.fillStyle = col(176, 66, 52); g.fillRect(0, 730, 2048, 90);
+    for (let i = 0; i < 1500; i++) {
+      const x = r() * 2048, y = 640 + r() * 400 - (x > 900 && x < 1700 ? r() * 340 : 0), s = 12 + r() * 40, gN = 95 + r() * 110;
+      g.fillStyle = col(50 + r() * 60, gN, 40 + r() * 34); g.globalAlpha = .82; g.beginPath(); g.ellipse(x, y, s, s * .72, r() * 3, 0, 7); g.fill();
+    }
+    g.globalAlpha = 1;
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+  const outDay = outsideTex(false), outEve = outsideTex(true);
+
+  // ---- materials
+  const mat = (o) => new THREE.MeshStandardMaterial({ roughness: .8, metalness: 0, ...o });
+  const wood = woodTex('#6b4427', '#2b170b', 'w');
+  const dark = woodTex('#2a1f19', '#0c0806', 'd');
+  const rustic = woodTex('#5e3d25', '#21120a', 'r');
+  const doorW = woodTex('#8a4a23', '#3d1c0a', 'door'); doorW.rotation = Math.PI / 2;
+  const M = {
+    wall: mat({ color: '#c9c9c3', bumpMap: wallBump, bumpScale: .3, roughness: .92 }),
+    wallWarm: mat({ color: '#c7bfb7', bumpMap: wallBump, bumpScale: .3, roughness: .92 }),
+    ceil: mat({ color: '#d8d3c4', bumpMap: stuccoBump, bumpScale: 2.2, roughness: 1 }),
+    floor: mat({ map: parquetTex, roughness: .36 }),
+    white: mat({ color: '#efeee8', roughness: .55 }),
+    black: mat({ color: '#17181a', roughness: .42, metalness: .5 }),
+    espresso: mat({ map: dark, roughness: .5 }),
+    walnut: mat({ map: wood, roughness: .48 }),
+    rustic: mat({ map: rustic, roughness: .6 }),
+    door: mat({ map: doorW, roughness: .4 }),
+    trimDark: mat({ color: '#3a2518', roughness: .5 }),
+    grey: mat({ color: '#6f7377', roughness: .95 }),
+    navy: mat({ map: fuzzy('#2b3550', 'nv'), roughness: .9 }),
+    mustard: mat({ map: fuzzy('#c99a1e', 'mu'), roughness: 1 }),
+    sage: mat({ map: fuzzy('#b9c3a8', 'sg'), roughness: 1 }),
+    linen: mat({ color: '#e9e7e1', roughness: .9 }),
+    brown: mat({ color: '#6e4a31', roughness: .75 }),
+    steel: mat({ color: '#c9cbcd', metalness: .9, roughness: .28 }),
+    glass: new THREE.MeshPhysicalMaterial({ color: '#ffffff', transparent: true, opacity: .1, roughness: .05, metalness: 0 }),
+    clear: mat({ color: '#e4edf0', transparent: true, opacity: .16, roughness: .12 }),
+    leaf: mat({ color: '#2f6a35', roughness: .55, side: THREE.DoubleSide }),
+    leafLt: mat({ color: '#5a9440', roughness: .55, side: THREE.DoubleSide }),
+    screen: mat({ color: '#060708', roughness: .32, metalness: .2 }),
+    shade: mat({ color: '#f4f1e8', roughness: .9, side: THREE.DoubleSide, emissive: '#ffcf8f', emissiveIntensity: 0 }),
+    bulb: mat({ color: '#ffffff', emissive: '#fff1da', emissiveIntensity: .2 }),
+    blind: mat({ color: '#8f9190', roughness: .95, side: THREE.DoubleSide }),
+    caster: new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }),
+  };
+  const C = c => mat({ color: c });
+
+  // ---- mesh helpers: y is the bottom of the box
+  const shadow = (m, c = true, r = true) => { m.castShadow = c; m.receiveShadow = r; return m; };
+  const box = (p, w, h, d, m, x = 0, y = 0, z = 0) => { const o = shadow(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m)); o.position.set(x, y + h / 2, z); p.add(o); return o; };
+  const cyl = (p, r1, r2, h, m, x = 0, y = 0, z = 0, seg = 24, open = false) => { const o = shadow(new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, h, seg, 1, open), m)); o.position.set(x, y + h / 2, z); p.add(o); return o; };
+  const blob = (p, sx, sy, sz, m, x = 0, y = 0, z = 0) => { const o = shadow(new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), m)); o.scale.set(sx, sy, sz); o.position.set(x, y, z); p.add(o); return o; };
+  const between = (p, a, b, r, m) => { const v = new THREE.Vector3().subVectors(b, a), o = shadow(new THREE.Mesh(new THREE.CylinderGeometry(r, r, v.length(), 8), m)); o.position.copy(a).addScaledVector(v, .5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v.normalize()); p.add(o); return o; };
+
+  const leafGeo = (() => {
+    const s = new THREE.Shape(); s.moveTo(0, 0); s.bezierCurveTo(.5, -.15, .62, .45, .36, .72); s.lineTo(.16, .52); s.lineTo(.26, .84); s.bezierCurveTo(.15, .98, .06, 1.02, 0, 1.08); s.bezierCurveTo(-.06, 1.02, -.15, .98, -.26, .84); s.lineTo(-.16, .52); s.lineTo(-.36, .72); s.bezierCurveTo(-.62, .45, -.5, -.15, 0, 0);
+    return new THREE.ShapeGeometry(s, 8);
+  })();
+  function foliage(p, r, count, spread, height, size, y0 = 0) {
+    for (let i = 0; i < count; i++) {
+      const a = r() * 6.28, q = (.25 + r() * .75) * spread, top = new THREE.Vector3(Math.cos(a) * q, y0 + height * (.45 + r() * .55), Math.sin(a) * q);
+      between(p, new THREE.Vector3(0, y0, 0), top, .006, M.leaf);
+      const l = shadow(new THREE.Mesh(leafGeo, r() > .3 ? M.leaf : M.leafLt)); l.scale.setScalar(size * (.7 + r() * .6)); l.position.copy(top);
+      l.rotation.set(-1.1 + r() * .9, a + 1.57, r() * .8 - .4, 'YXZ'); p.add(l);
+    }
+  }
+
+  // ---- furniture builders. Origin is the centre of the footprint on the floor, front faces +z.
+  const B = {
+    bed(g, it) {
+      const { w, d } = it, hd = -d / 2;
+      box(g, w, .26, d, M.grey, 0, .1, 0);
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => cyl(g, .025, .02, .1, M.black, a * (w / 2 - .08), 0, b * (d / 2 - .1), 10));
+      box(g, w - .08, .24, d - .06, M.linen, 0, .36, 0);
+      const bed = new THREE.Group(); bed.name = 'bedding'; g.add(bed);
+      box(bed, w - .02, .07, d - .45, M.navy, 0, .59, .15);
+      box(bed, .02, .36, d - .45, M.navy, w / 2 - .005, .26, .15); box(bed, .02, .36, d - .45, M.navy, -w / 2 + .005, .26, .15);
+      const tz = d / 2 - .55;
+      box(bed, w + .03, .03, 1, M.mustard, 0, .66, tz); box(bed, .025, .42, 1, M.mustard, w / 2 + .012, .25, tz); box(bed, .025, .42, 1, M.mustard, -w / 2 - .012, .25, tz); box(bed, w + .03, .36, .025, M.mustard, 0, .3, d / 2 - .05);
+      blob(bed, w * .42, .15, .16, M.linen, 0, .96, hd + .18);
+      blob(bed, .3, .1, .2, mat({ map: floral }), -w * .25, .73, hd + .26);
+      blob(bed, .28, .1, .2, mat({ map: checker }), w * .24, .72, hd + .28);
+    },
+    headboard(g, it) {
+      const { w, h, d } = it;
+      if (it.style === 'king') { // walnut frame on two legs with a tufted panel, from the product photo
+        const post = w * .06, rail = h * .075, low = h * .35, top = h - low;
+        box(g, post, h, d, M.walnut, -w / 2 + post / 2, 0, 0); box(g, post, h, d, M.walnut, w / 2 - post / 2, 0, 0);
+        box(g, w - 2 * post, rail, d, M.walnut, 0, h - rail, 0); box(g, w - 2 * post, rail, d, M.walnut, 0, low, 0);
+        box(g, w - 2 * post, top - 2 * rail, d * .5, M.walnut, 0, low + rail, -d * .2);
+        const panel = box(g, w * .8, top * .58, .05, mat({ map: tuftTex, roughness: .95 }), 0, low + top * .2, d * .1);
+        return;
+      }
+      const ribs = Math.max(5, Math.round(w / .145)), rw = w / ribs;
+      for (let i = 0; i < ribs; i++) {
+        const o = shadow(new THREE.Mesh(new THREE.CapsuleGeometry(rw / 2, Math.max(h - rw - .02, .1), 6, 12), M.grey));
+        o.scale.z = 1.25; o.position.set(-w / 2 + rw * (i + .5), h / 2, 0); g.add(o);
+      }
+    },
+    bench(g, it) {
+      const { w, d, h } = it; box(g, w, h - .12, d, M.brown, 0, .02, 0); box(g, w + .01, .12, d + .01, C('#8d6a4c'), 0, h - .12, 0);
+      box(g, w * .92, .025, d + .03, M.sage, 0, h, 0); box(g, w * .92, .2, .02, M.sage, 0, h - .19, d / 2 + .01); box(g, w * .92, .24, .02, M.sage, 0, h - .23, -d / 2 - .01);
+    },
+    desk(g, it) {
+      const { w, d, h } = it, top = h - .03;
+      box(g, w, .03, d, M.walnut, 0, top, 0); box(g, w - .04, .1, d - .05, M.black, 0, top - .1, -.01);
+      box(g, w / 2 - .04, .085, .012, mat({ color: '#121314', roughness: .4 }), -w / 4, top - .092, d / 2 - .03); box(g, w / 2 - .04, .085, .012, mat({ color: '#121314', roughness: .4 }), w / 4, top - .092, d / 2 - .03);
+      [[-1, 1], [1, 1], [-1, -1], [1, -1]].forEach(([a, b]) => box(g, .028, top - .1, .028, M.black, a * (w / 2 - .03), 0, b * (d / 2 - .03)));
+      const y = h; // what's on it in the photos
+      box(g, .3, .012, .21, M.steel, .28, y, .08); const lid = box(g, .3, .2, .008, M.screen, .28, y, -.03); lid.rotation.x = -.22;
+      [.05, .04, .045, .03].forEach((t, i) => box(g, .24 - i * .012, t, .17, C(['#c8b48a', '#3f4d6b', '#8d3a2c', '#e0dccf'][i]), -.42 + i * .004, y + [0, .05, .09, .135][i], 0));
+      cyl(g, .037, .037, .22, C('#e08b5a'), .03, y, -.12); cyl(g, .03, .036, .25, mat({ color: '#6cb6e8', transparent: true, opacity: .75 }), -.1, y, .06);
+      cyl(g, .02, .05, .36, C('#7a3fc4'), -.5, y + .18, -.02); cyl(g, .05, .055, .13, C('#ecebe4'), .5, y, -.14);
+      blob(g, .06, .06, .06, C('#c5362e'), .5, y + .18, -.14);
+    },
+    chair(g, it) {
+      const { w, h } = it;
+      for (let i = 0; i < 5; i++) { const a = i * 1.2566; between(g, new THREE.Vector3(0, .1, 0), new THREE.Vector3(Math.cos(a) * w * .46, .05, Math.sin(a) * w * .46), .014, M.black); blob(g, .025, .025, .025, M.black, Math.cos(a) * w * .46, .03, Math.sin(a) * w * .46); }
+      cyl(g, .022, .022, .34, M.black, 0, .1, 0, 12);
+      box(g, w * .84, .08, w * .8, M.brown, 0, .44, .02);
+      const back = box(g, w * .8, h - .54, .06, M.brown, 0, .52, -w * .36); back.rotation.x = -.1;
+      box(g, w * .78, .32, .02, M.linen, 0, .54, -w * .41);
+    },
+    chairSoft(g, it) {
+      const { w, d, h } = it, m = C('#7a8069'); box(g, w, .3, d, m, 0, .12, 0); box(g, w, h - .12, .16, m, 0, .12, -d / 2 + .08); box(g, .13, .34, d, m, -w / 2 + .065, .3, 0); box(g, .13, .34, d, m, w / 2 - .065, .3, 0); box(g, w - .28, .1, d - .2, C('#8a9078'), 0, .42, .08);
+    },
+    tvunit(g, it) {
+      const { w, d } = it, ch = .72, cols = 3, cw = w / cols;
+      box(g, w, .03, d, M.espresso, 0, ch - .03, 0); box(g, w, .03, d, M.espresso, 0, 0, 0); box(g, w, ch, .02, M.espresso, 0, 0, -d / 2 + .01);
+      for (let i = 0; i <= cols; i++) box(g, .03, ch - .06, d, M.espresso, -w / 2 + .015 + (w - .03) * i / cols, .03, 0);
+      box(g, w, .025, d, M.espresso, 0, .34, 0);
+      for (let i = 0; i < cols; i++) { const x = -w / 2 + cw * (i + .5); box(g, cw - .05, .29, .018, M.espresso, x, .04, d / 2 - .012); blob(g, .012, .012, .012, M.steel, x, .2, d / 2 + .002); }
+      blob(g, .13, .08, .08, C('#7a3d1f'), 0, .44, 0); blob(g, .13, .08, .08, C('#7a3d1f'), .55, .44, 0); box(g, .3, .05, .22, M.black, -.1 + cw, .365, 0);
+      const tw = Math.min(it.tvW || w, w * 1.1), th = it.h - ch - .06;
+      box(g, tw, th, .03, M.black, 0, ch + .06, -.06); const sc = box(g, tw - .012, th - .012, .002, M.screen, 0, ch + .066, -.044); sc.castShadow = false;
+      box(g, .012, .06, .16, M.steel, -tw * .35, ch, -.06); box(g, .012, .06, .16, M.steel, tw * .35, ch, -.06);
+      box(g, .4, .04, .1, M.black, -cw * .8, ch, .08);
+    },
+    woodcab(g, it) { // walnut nightstand with a glass top, open niche and two drawers
+      const { w, d, h } = it, t = .05, top = h - .012, niche = .13;
+      box(g, t, top, d, M.walnut, -w / 2 + t / 2, 0, 0); box(g, t, top, d, M.walnut, w / 2 - t / 2, 0, 0); box(g, w - 2 * t, .05, d, M.walnut, 0, 0, 0);
+      box(g, w - 2 * t, top - .05, .02, M.walnut, 0, .05, -d / 2 + .01); box(g, w - 2 * t, .025, d, M.walnut, 0, top - niche - .025, 0);
+      const dh = (top - niche - .1) / 2;
+      [0, 1].forEach(i => { const y = .06 + i * (dh + .01); box(g, w - 2 * t - .01, dh, d - .03, M.walnut, 0, y, .01); box(g, .16, .012, .02, M.steel, 0, y + dh / 2, d / 2 + .004); });
+      const glass = box(g, w + .01, .012, d + .01, mat({ color: '#d8e6e4', transparent: true, opacity: .45, roughness: .1 }), 0, top, 0); glass.castShadow = false;
+    },
+    whiteUnit(g, it) {
+      const { w, d, h } = it, o = cyl(g, w / 2, w / 2, h, M.white, 0, 0, 0, 32); o.scale.z = d / w; box(g, w * .62, h * .4, .01, M.screen, 0, h * .14, d / 2 - .004); box(g, w * .55, .012, .01, C('#2b2b2b'), 0, h - .05, d / 2 - .03);
+    },
+    cart(g, it) {
+      const { w, d, h } = it; [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => cyl(g, .008, .008, h, M.black, a * (w / 2 - .01), 0, b * (d / 2 - .01), 8));
+      [.1, .4, .68].forEach(y => box(g, w, .012, d, M.black, 0, y, 0));
+      blob(g, .08, .05, .1, C('#c44131'), 0, .74, -.03); blob(g, .06, .04, .08, C('#2c56a6'), 0, .46, .02); blob(g, .05, .05, .05, C('#e5c43a'), 0, .75, .1);
+    },
+    mirror(g, it) {
+      const { w, h } = it, t = new THREE.Group(); t.rotation.x = it.hang ? 0 : -.09; t.position.z = it.hang ? 0 : .04; g.add(t);
+      const f = .075, th = .035;
+      box(t, w, f, th, M.black, 0, h - f, 0); box(t, w, f, th, M.black, 0, 0, 0); box(t, f, h - 2 * f, th, M.black, -w / 2 + f / 2, f, 0); box(t, f, h - 2 * f, th, M.black, w / 2 - f / 2, f, 0);
+      box(t, w - 2 * f, h - 2 * f, .008, mat({ color: '#a6b2b8', metalness: .95, roughness: .12 }), 0, f, 0).name = 'plainGlass';
+      const R = new Reflector(new THREE.PlaneGeometry(w - 2 * f, h - 2 * f), { textureWidth: 640, textureHeight: 1280, clipBias: .002, color: 0xe6e9ea });
+      R.position.set(0, h / 2, .006); R.name = 'reflector'; t.add(R);
+    },
+    bowls(g, it) { // one black feeder with two inset bowls, standing on a paw-print mat
+      const { w, d } = it, tw = w * .88, td = d * .92, top = .125, r = Math.min(tw * .4, td * .23), zs = [td / 4.2, -td / 4.2];
+      const plastic = mat({ color: '#1a1b1d', roughness: .38 }), steel = mat({ color: '#c9cbcd', metalness: .85, roughness: .32, side: THREE.DoubleSide }), rubber = mat({ color: '#55585c', roughness: .7 });
+      const m = box(g, w, .005, d, C('#232427')); m.castShadow = false;
+      [[-1, 1], [1, -1]].forEach(([a, b]) => { const paw = cyl(g, .022, .022, .002, C('#b9b3a4'), a * (w / 2 - .035), .005, b * (d / 2 - .04), 14); paw.castShadow = false; });
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => box(g, .03, .03, .03, plastic, a * (tw / 2 - .03), .005, b * (td / 2 - .03)));
+      box(g, tw, .09, .006, plastic, 0, .035, td / 2 - .003); box(g, tw, .09, .006, plastic, 0, .035, -td / 2 + .003); box(g, .006, .09, td, plastic, tw / 2 - .003, .035, 0); box(g, .006, .09, td, plastic, -tw / 2 + .003, .035, 0);
+      box(g, tw, .006, td, plastic, 0, .035, 0);
+      const plate = new THREE.Shape(); plate.moveTo(-tw / 2, -td / 2); plate.lineTo(tw / 2, -td / 2); plate.lineTo(tw / 2, td / 2); plate.lineTo(-tw / 2, td / 2); plate.closePath();
+      zs.forEach(z => { const h = new THREE.Path(); h.absarc(0, -z, r, 0, Math.PI * 2, true); plate.holes.push(h); });
+      const pl = shadow(new THREE.Mesh(new THREE.ExtrudeGeometry(plate, { depth: .008, bevelEnabled: false, curveSegments: 28 }), plastic)); pl.rotation.x = -Math.PI / 2; pl.position.y = top - .008; g.add(pl);
+      [[tw, .012, 0, td / 2 - .004], [tw, .012, 0, -td / 2 + .004]].forEach(([a, b, x, z]) => box(g, a, b, .008, plastic, x, top, z)); [1, -1].forEach(k => box(g, .008, .012, td, plastic, k * (tw / 2 - .004), top, 0));
+      zs.forEach((z, i) => {
+        cyl(g, r, r * .72, .075, steel, 0, top - .07, z, 28, true);
+        const floor = cyl(g, r * .72, r * .72, .002, i ? C('#e7dfc8') : steel, 0, top - .071, z, 28); floor.castShadow = false;
+        const ring = shadow(new THREE.Mesh(new THREE.TorusGeometry(r, i ? .012 : .005, 8, 36), i ? rubber : steel)); ring.rotation.x = Math.PI / 2; ring.scale.z = .5; ring.position.set(0, top + .004, z); g.add(ring);
+      });
+      box(g, .004, .055, .1, mat({ color: '#2c2d30', roughness: .25 }), tw / 2 + .002, .06, 0);
+      const vent = cyl(g, .022, .022, .002, C('#0d0d0e'), tw * .28, top, 0, 16); vent.castShadow = false;
+    },
+    capTower(g, it) {
+      const { w, d, h } = it, r = rng('caps'), cols = 3, rows = 9, cw = w / cols, rh = (h - .03) / rows;
+      const capColors = ['#27323f', '#e8e4d8', '#3a2f59', '#2d8f8c', '#cfe24c', '#b0352c', '#e6dcc4', '#2a6fb5', '#123b33', '#1a1a1a', '#f2f0ea', '#c9b98a', '#3b5bb5', '#7a2f3a', '#20252d'];
+      const shoes = ['#eeeeea', '#d9d4c8', '#23252a', '#b64a2b', '#3c4256', '#8c9096'];
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+        const x = -w / 2 + cw * (i + .5), y = j * rh, cap = j >= 5;
+        box(g, cw - .006, .012, d, M.white, x, y, 0); box(g, .012, rh, d, M.white, x - cw / 2 + .006, y, 0); box(g, .012, rh, d, M.white, x + cw / 2 - .006, y, 0);
+        const dr = box(g, cw - .03, rh - .03, .004, M.clear, x, y + .02, d / 2 - .004); dr.castShadow = false;
+        if (cap) {
+          const c = C(capColors[(j * 3 + i) % capColors.length]); blob(g, .085, .06, .1, c, x, y + .025, -.03);
+          const brim = box(g, .13, .008, .1, c, x, y + .03, .09); brim.rotation.x = .12;
+        } else {
+          const c = C(shoes[(r() * shoes.length) | 0]); [-.055, .055].forEach(o => { box(g, .08, .05, .24, c, x + o, y + .03, 0); box(g, .085, .014, .25, M.white, x + o, y + .016, 0); });
+        }
+      }
+      box(g, w, .02, d, M.white, 0, h - .02, 0); box(g, w + .04, .02, d, M.walnut, 0, h, 0);
+      const pot = new THREE.Group(); pot.position.set(-w * .24, h + .02, 0); g.add(pot); cyl(pot, .13, .09, .13, C('#b5502d'), 0, 0, 0); foliage(pot, rng('pothos'), 12, .24, .24, .09, .1);
+      const cactus = C('#2f9a4a'); cyl(g, .05, .05, .24, cactus, w * .12, h + .02, 0); cyl(g, .025, .025, .12, cactus, w * .12 + .08, h + .12, 0); box(g, .08, .03, .03, cactus, w * .12 + .05, h + .1, 0);
+      const p2 = new THREE.Group(); p2.position.set(w * .36, h + .02, 0); g.add(p2); cyl(p2, .06, .05, .1, C('#3b3b3b'), 0, 0, 0); foliage(p2, rng('p2'), 9, .2, .3, .08, .08);
+    },
+    shelf(g, it) {
+      const { w, d, h } = it, r = rng(it.id), n = 5;
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => box(g, .022, h, .022, M.black, a * (w / 2 - .011), 0, b * (d / 2 - .011)));
+      const books = ['#c9a646', '#c7b26a', '#2f3a4e', '#7b2f2a', '#e7e0cf', '#1e2021', '#3e5c4d', '#b9783c', '#556172'];
+      for (let i = 0; i < n; i++) {
+        const y = .08 + (h - .1) * i / (n - 1); box(g, w, .025, d, M.rustic, 0, y, 0);
+        if (i === n - 1) break;
+        let x = -w / 2 + .03; const fill = w * (.5 + r() * .4), hh = (h - .1) / (n - 1) - .05;
+        while (x < -w / 2 + fill) { const t = .02 + r() * .03, bh = hh * (.62 + r() * .3); box(g, t, bh, d * .72, C(books[(r() * books.length) | 0]), x + t / 2, y + .025, 0); x += t + .002; }
+        if (w > .5 && r() > .35) { const f = box(g, .13, .17, .012, M.black, w / 2 - .12, y + .025, 0); f.rotation.x = -.14; box(f, .1, .13, .002, C('#e7e2d6'), 0, -.065, .007); }
+      }
+      if (w > .5) { const p = new THREE.Group(); p.position.set(-w * .22, h, 0); g.add(p); cyl(p, .1, .07, .12, C('#4b3a30'), 0, .005, 0); foliage(p, rng('sh' + it.id), 8, .2, .3, .08, .1); }
+      else { cyl(g, .06, .05, .1, C('#3b3b3b'), .04, h, 0); blob(g, .05, .05, .02, C('#e5ae1f'), .04, h + .26, 0); between(g, new THREE.Vector3(.04, h + .1, 0), new THREE.Vector3(.04, h + .24, 0), .004, M.leaf); }
+    },
+    basket(g, it) {
+      const { w, d } = it; box(g, w, .025, d, M.white, 0, .38, 0); [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => cyl(g, .012, .012, .38, M.walnut, a * (w / 2 - .03), 0, b * (d / 2 - .03), 8));
+      const m = mat({ color: '#2547ae', side: THREE.DoubleSide, roughness: .5 }), o = cyl(g, w / 2, w * .4, .3, m, 0, .405, 0, 24, true); cyl(g, w * .4, w * .4, .005, m, 0, .405, 0); const ring = shadow(new THREE.Mesh(new THREE.TorusGeometry(w / 2, .012, 8, 28), m)); ring.rotation.x = 1.57; ring.position.y = .705; g.add(ring);
+    },
+    lamp(g, it) {
+      const h = it.h; cyl(g, .13, .13, .025, M.black, -.02, 0, 0, 24); cyl(g, .01, .01, h - .1, M.black, -.02, 0, 0, 10);
+      between(g, new THREE.Vector3(-.02, h - .1, 0), new THREE.Vector3(.1, h - .02, 0), .008, M.black);
+      const pleats = 40, pts = []; for (let i = 0; i < pleats * 2; i++) { const a = i / (pleats * 2) * 6.283, r = i % 2 ? .19 : .197; pts.push(new THREE.Vector2(Math.cos(a) * r, Math.sin(a) * r)); }
+      const shp = new THREE.Shape(pts), geo = new THREE.ExtrudeGeometry(shp, { depth: .27, bevelEnabled: false }); shp.holes.push(new THREE.Path(pts.map(p => p.clone().multiplyScalar(.97))));
+      const geo2 = new THREE.ExtrudeGeometry(shp, { depth: .27, bevelEnabled: false }); geo.dispose();
+      const s = shadow(new THREE.Mesh(geo2, M.shade)); s.rotation.x = -1.5708; s.position.set(.1, h - .3, 0); g.add(s);
+    },
+    plant(g, it) {
+      const { w, d, h } = it, y = it.stand || 0, r = y ? .125 : w * .36; // on a stand, the pot is the 12.5 cm radius you measured
+      if (y) { box(g, w, .03, d, M.espresso, 0, y - .03, 0); box(g, w - .02, .025, d - .02, M.espresso, 0, y * .35, 0); [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => box(g, .03, y - .03, .03, M.espresso, a * (w / 2 - .02), 0, b * (d / 2 - .02))); }
+      cyl(g, r, r * .75, .24, C('#26231f'), 0, y, 0); cyl(g, r * .95, r * .95, .01, C('#3a2a1c'), 0, y + .23, 0);
+      foliage(g, rng(it.id + 'm'), 15, y ? .36 : w * .85, h - y - .26, y ? .15 : .2 * (w / .5), y + .24);
+    },
+    rug(g, it) { const m = mat({ map: jute, roughness: 1 }), o = box(g, it.w, .012, it.d, m); o.castShadow = false; [-1, 1].forEach(s => { const f = box(g, it.w, .004, .07, C('#c9b78f'), 0, 0, s * (it.d / 2 + .035)); f.castShadow = false; }); },
+    rugRound(g, it) { const o = cyl(g, it.w / 2, it.w / 2, .012, [C('#a98f64'), mat({ map: juteRound, roughness: 1 }), C('#a98f64')], 0, 0, 0, 48); o.castShadow = false; o.scale.z = it.d / it.w; },
+    painting(g, it) { const { w, h } = it; box(g, w, h, .025, M.black, 0, 0, 0); const o = shadow(new THREE.Mesh(new THREE.PlaneGeometry(w - .03, h - .03), mat({ map: artTex, roughness: .35 })), false); o.position.set(0, h / 2, .0135); g.add(o); },
+    box(g, it) {
+      const { w, d, h } = it, m = C(it.color || '#8a7a66'); box(g, w, h, d, m);
+      const n = it.drawers || 0; for (let i = 0; i < n; i++) { const y = h * (i + .5) / n; box(g, w - .04, h / n - .025, .01, m, 0, y - h / n / 2 + .012, d / 2 + .004); blob(g, .012, .012, .012, M.steel, 0, y, d / 2 + .014); }
+    },
+  };
+
+  // ---- shell: walls, closet, door, window
+  const walls = { N: new THREE.Group(), S: new THREE.Group(), E: new THREE.Group(), W: new THREE.Group(), C: new THREE.Group() };
+  let doorPivot, blindMesh, farOut, nearOut, hall, outGlass = [];
+  function wallSeg(group, x0, x1, y0, y1, z0, z1, m) { // y1 'top' follows the sloped ceiling
+    const follow = y1 === 'top', yy = follow ? y0 + 1 : y1, cx = (x0 + x1) / 2, cy = (y0 + yy) / 2, geo = new THREE.BoxGeometry(x1 - x0, yy - y0, z1 - z0);
+    if (follow) { const p = geo.attributes.position; for (let i = 0; i < p.count; i++) if (p.getY(i) > 0) p.setY(i, ceilAt(cx + p.getX(i)) - cy); geo.computeVertexNormals(); }
+    const o = new THREE.Mesh(geo, m); o.position.set(cx, cy, (z0 + z1) / 2); o.receiveShadow = true; group.add(o);
+    const c = new THREE.Mesh(geo, M.caster); c.position.copy(o.position); c.castShadow = true; shell.add(c);
+  }
+  function ceilingSlab(group, x0, x1, z0, z1, m) {
+    const cx = (x0 + x1) / 2, geo = new THREE.BoxGeometry(x1 - x0, .08, z1 - z0), p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) + .04 + ceilAt(cx + p.getX(i)));
+    geo.computeVertexNormals();
+    const o = new THREE.Mesh(geo, m); o.position.set(cx, 0, (z0 + z1) / 2); o.receiveShadow = true; group.add(o);
+    const c = new THREE.Mesh(geo, M.caster); c.position.copy(o.position); c.castShadow = true; shell.add(c);
+  }
+  function buildShell() {
+    while (shell.children.length) shell.remove(shell.children[0]);
+    Object.values(walls).forEach(g => { g.clear(); shell.add(g); });
+    const dX = ROOM.doorX, dW = ROOM.doorW, dH = 2.03, cX = ROOM.closetX, cW = ROOM.closetW, cH = 2.12, Hhi = ROOM.Hhi, Hlo = ROOM.Hlo, cD = ROOM.closetD, [w0, w1] = winZ(), sill = ROOM.sill, wTop = sill + ROOM.winH;
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(W + 2 * T, D + 2 * T + cD), M.floor);
+    parquetTex.repeat.set((W + 2 * T) / .96, (D + 2 * T + cD) / .96);
+    floor.rotation.x = -Math.PI / 2; floor.position.set(W / 2, 0, D / 2 - cD / 2); floor.receiveShadow = true; shell.add(floor);
+    box(shell, W + 2 * T, .1, D + 2 * T + cD, C('#4a4b44'), W / 2, -.101, D / 2 - cD / 2);
+    // north wall with door and closet openings
+    const N = walls.N;
+    wallSeg(N, -T, dX, 0, 'top', -T, 0, M.wall); wallSeg(N, dX, dX + dW, dH, 'top', -T, 0, M.wall); wallSeg(N, dX + dW, cX, 0, 'top', -T, 0, M.wall); wallSeg(N, cX, cX + cW, cH, 'top', -T, 0, M.wall); wallSeg(N, cX + cW, W + T, 0, 'top', -T, 0, M.wall);
+    box(N, .02, ceilAt(.98), .012, M.white, .95 + .03, 0, .002); box(N, .02, ceilAt(cX + cW + .1), .012, M.white, cX + cW + .1, 0, .002); // plaster seams in the photos
+    const fr = .045; box(N, fr, dH, T + .03, M.trimDark, dX - fr / 2 + .01, 0, -T / 2); box(N, fr, dH, T + .03, M.trimDark, dX + dW + fr / 2 - .01, 0, -T / 2); box(N, dW + 2 * fr, fr, T + .03, M.trimDark, dX + dW / 2, dH - fr + .01, -T / 2);
+    hall = new THREE.Group(); shell.add(hall); // hallway beyond the door, only seen while walking
+    box(hall, 1.6, Hhi, .05, C('#7f7a70'), dX + dW / 2, 0, -T - .9); box(hall, .05, Hhi, 1, C('#8c877c'), dX - .1, 0, -T - .45); box(hall, .05, Hhi, 1, C('#8c877c'), dX + dW + .1, 0, -T - .45);
+    doorPivot = new THREE.Group(); doorPivot.position.set(dX + .012, 0, -.015); N.add(doorPivot);
+    box(doorPivot, dW - .03, 2, .036, M.door, (dW - .03) / 2, .01, 0);
+    [-.03, .03].forEach(s => { blob(doorPivot, .026, .026, .026, M.steel, dW - .1, 1, s * 1.45); cyl(doorPivot, .012, .012, .05, M.steel, dW - .1, .975, s * .9, 8); });
+    // closet niche
+    const cz = -T - cD + .14;
+    wallSeg(N, cX - .06, cX, 0, 'top', cz - .04, -T, M.white); wallSeg(N, cX + cW, cX + cW + .06, 0, 'top', cz - .04, -T, M.white); wallSeg(N, cX - .06, cX + cW + .06, 0, 'top', cz - .08, cz, M.white);
+    box(N, cW, .02, cD - .12, M.white, cX + cW / 2, 1.75, (cz - T + .1) / 2 + .0);
+    [[0, .02], [.42, .02]].forEach(([o, t]) => box(N, t, 1.75, cD - .1, M.white, cX + o + t / 2, 0, (cz + .05) / 2 - .02));
+    const dz = (cz + .02) / 2 + .03, dcol = C('#e9e8e2');
+    [.62, .42, .22, .02].forEach(y => { box(N, .38, .18, cD - .14, dcol, cX + .22, y, dz); box(N, .1, .012, .012, C('#2b2b2b'), cX + .22, y + .14, dz + (cD - .14) / 2 + .005); });
+    [.84, 1.24].forEach(y => box(N, .4, .018, cD - .1, M.white, cX + .22, y, dz));
+    const r = rng('closet'), cl = ['#2245b4', '#1d2026', '#2c3442', '#8b8b86', '#c8c0b4', '#3a5a7a', '#7e3b2e', '#22262b', '#d4a02f', '#3e6f78', '#6b4a35', '#c7c2ba'];
+    for (let i = 0; i < 12; i++) { box(N, .12, .02 + r() * .06, .3, C(cl[i]), cX + .22 + (r() - .5) * .1, .86 + (i % 6) * .05, dz); }
+    for (let i = 0; i < 6; i++) cyl(N, .025, .025, .12 + r() * .1, C(['#ececec', '#b5302c', '#1b1b1b', '#ffffff', '#6d3aa8', '#d0d0d0'][i]), cX + .08 + i * .055, 1.26, dz + (r() - .5) * .1, 10);
+    cyl(N, .012, .012, cW - .46, M.steel, cX + .45 + (cW - .46) / 2, 1.69 - (cW - .46) / 2, dz).rotation.z = 1.5708;
+    for (let x = cX + .5; x < cX + cW - .04; x += .028) { const h = .7 + r() * .45; box(N, .024, h, .4, C(cl[(r() * cl.length) | 0]), x, 1.66 - h, dz); }
+    blob(N, .32, .08, .2, C('#d9d6cc'), cX + .88, .1, dz); blob(N, .2, .13, .17, C('#d7c95a'), cX + 1.08, .19, dz - .02);
+    [[cX + .2, '#d8c98a', .22], [cX + .45, '#1f7a6c', .25], [cX + .74, '#44413c', .22], [cX + 1.1, '#ecebe6', .3]].forEach(([x, c, h]) => box(N, .24, h, .32, C(c), x, 1.77, dz));
+    box(N, .02, cH, .02, M.white, cX - .015, 0, .005); box(N, .02, cH, .02, M.white, cX + cW + .015, 0, .005); box(N, cW + .05, .02, .02, M.white, cX + cW / 2, cH, .005);
+    // east wall with the window
+    const E = walls.E;
+    wallSeg(E, W, W + T, 0, Hlo, -T, w0, M.wall); wallSeg(E, W, W + T, 0, Hlo, w1, D + T, M.wall); wallSeg(E, W, W + T, 0, sill, w0, w1, M.wall); wallSeg(E, W, W + T, wTop, Hlo, w0, w1, M.wall);
+    const fx = W + T / 2, fw = .05, wW = w1 - w0, wc = (w0 + w1) / 2;
+    box(E, .08, fw, wW, M.black, fx, sill, wc); box(E, .08, fw, wW, M.black, fx, wTop - fw, wc); box(E, .08, ROOM.winH, fw, M.black, fx, sill, w0 + fw / 2); box(E, .08, ROOM.winH, fw, M.black, fx, sill, w1 - fw / 2); box(E, .1, ROOM.winH, .045, M.black, fx - .01, sill, wc);
+    const bars = [.24, .47, .7, .94]; bars.forEach(f => box(E, .018, .022, wW, M.black, fx + .05, sill + ROOM.winH * f, wc));
+    const g = new THREE.Mesh(new THREE.PlaneGeometry(wW, ROOM.winH), M.glass); g.rotation.y = -1.5708; g.position.set(fx, sill + ROOM.winH / 2, wc); E.add(g);
+    box(E, .02, ROOM.winH * .96, .018, M.black, W - .004 + T * .7, sill, w0 + wW * .08);
+    box(E, .1, .12, wW + .12, C('#7d7f7e'), W - .05, wTop + .07, wc);
+    blindMesh = new THREE.Mesh(new THREE.PlaneGeometry(wW + .04, ROOM.winH + .05), M.blind); blindMesh.rotation.y = -1.5708; blindMesh.castShadow = true; E.add(blindMesh);
+    between(E, new THREE.Vector3(W - .03, wTop + .08, w0 - .03), new THREE.Vector3(W - .03, sill - .25, w0 - .03), .003, M.white);
+    const outMat = new THREE.MeshBasicMaterial({ map: outDay, toneMapped: false });
+    farOut = new THREE.Mesh(new THREE.PlaneGeometry(11, 5.5), outMat); farOut.rotation.y = -1.5708; farOut.position.set(W + 3.2, 1.4, D / 2); shell.add(farOut);
+    nearOut = new THREE.Mesh(new THREE.PlaneGeometry(wW, ROOM.winH), outMat); nearOut.rotation.y = -1.5708; nearOut.position.set(W + T - .002, sill + ROOM.winH / 2, wc); E.add(nearOut);
+    outGlass = [outMat];
+    // south and west
+    wallSeg(walls.S, -T, W + T, 0, 'top', D, D + T, M.wallWarm); wallSeg(walls.W, -T, 0, 0, Hhi, -T, D + T, M.wallWarm);
+    box(walls.W, .01, .14, .1, C('#3d3d3b'), .002, 1.05, 1.26);
+    // ceiling with the two round lights
+    const Cg = walls.C; ceilingSlab(Cg, -T, W + T, -T, D + T, M.ceil);
+    ceilingSlab(Cg, cX - .06, cX + cW + .06, cz - .08, -T, M.white);
+    const tilt = -Math.atan((Hhi - Hlo) / W);
+    lightsAt.forEach(([x, z]) => { const y = ceilAt(x); cyl(Cg, .155, .155, .03, M.black, x, y - .03, z, 40).rotation.z = tilt; const d = cyl(Cg, .135, .135, .004, M.bulb, x, y - .034, z, 40); d.rotation.z = tilt; d.castShadow = false; });
+    Object.values(walls).forEach(gr => gr.traverse(o => { if (o.isMesh && o.material !== M.caster) o.castShadow = false; }));
+    doorPivot.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    ceilSpots.forEach((s, i) => { s.position.y = ceilAt(lightsAt[i][0]) - .05; });
+    V.applyView(); touch();
+  }
+
+  // ---- lights
+  const lightsAt = [[2.25, 1.2], [2.25, 2.55]];
+  const hemi = new THREE.HemisphereLight('#ffffff', '#b3a798', 1);
+  const sun = new THREE.DirectionalLight('#fff0d8', 3);
+  sun.position.set(W + 3.6, 3.5, .7); sun.target.position.set(1.9, 0, 2.1); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: .5, far: 13 }); sun.shadow.bias = -.0004; sun.shadow.normalBias = .02; sun.shadow.radius = 3;
+  const sky = new THREE.PointLight('#d7e6ff', 3, 7, 1.4); sky.position.set(W - .3, 1.5, D / 2);
+  const ceilSpots = lightsAt.map(([x, z], i) => {
+    const s = new THREE.SpotLight('#ffe4bd', 12, 7, 1.42, 1, 1.25); s.position.set(x, 2.37, z); s.target.position.set(x, 0, z); scene.add(s.target);
+    if (i === 0) { s.castShadow = true; s.shadow.mapSize.set(1024, 1024); s.shadow.bias = -.0006; s.shadow.normalBias = .02; s.shadow.radius = 4; } return s;
+  });
+  const lampLight = new THREE.PointLight('#ffc98a', 3, 5, 1.6);
+  scene.add(hemi, sun, sun.target, sky, lampLight, ...ceilSpots);
+
+  // ---- furniture sync
+  const built = new Map();
+  const outlineGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), outlineMat = new THREE.LineBasicMaterial({ color: '#e2ad2d' }), outlines = [];
+  V.sync = () => {
+    const seen = new Set();
+    for (const it of S.items) {
+      seen.add(it.id);
+      const sig = [it.type, it.w, it.d, it.h, it.color, it.style].join();
+      let rec = built.get(it.id);
+      if (!rec || rec.sig !== sig) {
+        if (rec) furn.remove(rec.g);
+        const g = new THREE.Group(); (B[it.type] || B.box)(g, it); g.traverse(o => o.userData.id = it.attach || it.id); furn.add(g); rec = { g, sig }; built.set(it.id, rec);
+      }
+      rec.g.position.set(it.x, it.y || 0, it.z); rec.g.rotation.y = rad(it.rot); rec.g.visible = inRoom(it);
+    }
+    for (const [id, rec] of built) if (!seen.has(id)) { furn.remove(rec.g); built.delete(id); }
+    const lamp = item('lamp'); if (lamp && inRoom(lamp)) lampLight.position.set(lamp.x + .1 * Math.cos(rad(lamp.rot)), lamp.h - .18, lamp.z - .1 * Math.sin(rad(lamp.rot)));
+    applyFurn(); V.select(); touch();
+  };
+  function applyFurn() {
+    const best = S.view.quality === 'best';
+    furn.traverse(o => { if (o.name === 'bedding') o.visible = S.view.bedding; if (o.name === 'reflector') o.visible = best; if (o.name === 'plainGlass') o.visible = !best; });
+  }
+  V.select = () => {
+    const list = S.view.mode === 'orbit' ? selected().map(item).filter(i => i && inRoom(i)) : [];
+    while (outlines.length < list.length) { const o = new THREE.LineSegments(outlineGeo, outlineMat); scene.add(o); outlines.push(o); }
+    outlines.forEach((o, n) => {
+      const it = list[n]; o.visible = !!it; if (!it) return;
+      o.position.set(it.x, (it.y || 0) + it.h / 2, it.z); o.scale.set(it.w + .02, it.h + .02, it.d + .02); o.rotation.y = rad(it.rot);
+    });
+    touch();
+  };
+
+  const orbit = { yaw: -.55, pitch: .98, r: 6.7, t: new THREE.Vector3(1.9, .75, 1.75) };
+  const walk = { x: .45, z: .42, y: 1.62, yaw: 0, pitch: -.05, spotY: false };
+
+  // ---- view settings
+  V.applyView = () => {
+    const v = S.view, eve = v.time === 'evening', open = v.blind / 100, best = v.quality === 'best';
+    if (doorPivot) doorPivot.rotation.y = -rad(v.door * .92);
+    if (blindMesh) {
+      const hgt = ROOM.winH + .05, sc = Math.max(open, .001); blindMesh.scale.y = sc; blindMesh.position.set(W + .01, ROOM.sill + ROOM.winH + .02 - hgt * sc / 2, ROOM.D / 2); blindMesh.visible = open > .005;
+    }
+    const pass = 1 - .9 * open;
+    hemi.intensity = eve ? .1 : .95 * (.55 + .45 * pass);
+    hemi.color.set(eve ? '#6a6f90' : '#ffffff');
+    sun.intensity = eve ? 0 : 4.2 * pass; sun.castShadow = best && !eve;
+    sky.intensity = eve ? .6 : 4.5 * pass; sky.color.set(eve ? '#5a6aa8' : '#d7e6ff');
+    ceilSpots.forEach((s, i) => { s.intensity = eve ? 11 : 0; s.visible = eve; s.castShadow = best && i === 0; });
+    lampLight.intensity = eve ? 2.6 : 0; lampLight.visible = eve; M.shade.emissiveIntensity = eve ? 1.3 : 0; M.bulb.emissiveIntensity = eve ? 3 : .15;
+    outGlass.forEach(m => { m.map = eve ? outEve : outDay; m.needsUpdate = true; });
+    renderer.shadowMap.enabled = best; renderer.shadowMap.needsUpdate = true;
+    scene.traverse(o => { if (o.material && o.isMesh) { const ms = Array.isArray(o.material) ? o.material : [o.material]; ms.forEach(m => m.needsUpdate = true); } });
+    renderer.setPixelRatio(best ? Math.min(devicePixelRatio, 2) : 1);
+    applyFurn(); applyStage(); V.resize();
+    if (v.mode === 'walk' && !walk.spotY) walk.y = v.eye;
+    touch();
+  };
+  function applyStage() {
+    const css = getComputedStyle(document.documentElement).getPropertyValue('--stage').trim() || '#d6d8cf';
+    scene.background = new THREE.Color(S.view.mode === 'walk' ? (S.view.time === 'evening' ? '#0d1220' : '#e8eef0') : css);
+  }
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { applyStage(); touch(); });
+  new MutationObserver(() => { applyStage(); touch(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  V.resize = () => {
+    const r = host.getBoundingClientRect(); if (!r.width || !r.height) return;
+    renderer.setSize(r.width, r.height, false); camera.aspect = r.width / r.height; camera.updateProjectionMatrix();
+    if (!orbit.zoomed) orbit.r = 6.5 * Math.max(1, 1.2 / camera.aspect);
+    touch();
+  };
+  new ResizeObserver(V.resize).observe(host);
+
+  // ---- cameras
+  let tween = null;
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const R = .17;
+  function blocked(x, z) {
+    const closet = x > ROOM.closetX + .45 + R && x < ROOM.closetX + ROOM.closetW - R && z < .2;
+    if (x < R || x > W - R || z > D - R || (z < R && !closet) || z < -.3) return true;
+    return S.items.some(it => inRoom(it) && !it.rug && !it.wall && distTo(it, x, z) < R);
+  }
+  const yawTo = (x, z, tx, tz) => Math.atan2(-(tx - x), -(tz - z));
+  function freeNear(x, z) {
+    if (!blocked(x, z)) return [x, z];
+    for (let r = .1; r < 2.5; r += .1) for (let a = 0; a < 6.28; a += .4) { const p = x + Math.cos(a) * r, q = z + Math.sin(a) * r; if (!blocked(p, q)) return [p, q]; }
+    return [x, z];
+  }
+  V.goTo = spot => {
+    let to;
+    const bed = item('bed');
+    if (spot === 'bed' && bed && inRoom(bed)) {
+      const { uz } = axes(bed), x = bed.x - uz[0] * (bed.d / 2 - .6), z = bed.z - uz[1] * (bed.d / 2 - .6);
+      to = { x, z, y: 1, yaw: Math.atan2(-uz[0], -uz[1]), pitch: .02, spotY: true };
+    } else if (spot === 'window') {
+      const [x, z] = freeNear(3.5, 1); to = { x, z, y: S.view.eye, yaw: yawTo(x, z, .4, 2.1), pitch: -.16 };
+    } else {
+      const [x, z] = freeNear(.45, .42); to = { x, z, y: S.view.eye, yaw: yawTo(x, z, 2.9, 2.2), pitch: -.1 };
+    }
+    walk.spotY = !!to.spotY;
+    if (still) { Object.assign(walk, to); touch(); return; }
+    let dy = to.yaw - walk.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+    tween = { t: 0, t0: performance.now(), from: { ...walk }, to: { ...to, yaw: walk.yaw + dy } };
+  };
+  V.setMode = () => {
+    const w = S.view.mode === 'walk'; camera.fov = w ? 68 : 46; camera.updateProjectionMatrix();
+    if (w) { V.goTo(S.view.spot); host.focus({ preventScroll: true }); }
+    applyStage(); V.select(); touch();
+  };
+  const Hmin = ROOM.Hlo;
+  function placeCamera() {
+    const v = S.view;
+    if (v.mode === 'walk') {
+      camera.position.set(walk.x, walk.y, walk.z); camera.rotation.set(walk.pitch, walk.yaw, 0, 'YXZ');
+      Object.values(walls).forEach(g => g.visible = true); farOut.visible = true; nearOut.visible = false; hall.visible = true;
+    } else {
+      const c = Math.cos(orbit.pitch), t = orbit.t;
+      camera.position.set(t.x + orbit.r * c * Math.sin(orbit.yaw), t.y + orbit.r * Math.sin(orbit.pitch), t.z + orbit.r * c * Math.cos(orbit.yaw)); camera.lookAt(t);
+      const p = camera.position; walls.N.visible = p.z > 0; walls.S.visible = p.z < D; walls.W.visible = p.x > 0; walls.E.visible = p.x < W; walls.C.visible = p.y < Hmin;
+      farOut.visible = false; nearOut.visible = true; hall.visible = false;
+    }
+  }
+
+  // ---- pointer input
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hitP = new THREE.Vector3();
+  const setRay = e => { const r = renderer.domElement.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(ndc, camera); };
+  const pick = e => {
+    setRay(e); const list = ray.intersectObjects(furn.children, true).filter(h => { let o = h.object; while (o) { if (!o.visible) return false; o = o.parent; } return true; });
+    const solidHit = list.find(h => { const i = item(h.object.userData.id); return i && !i.rug; }); return (solidHit || list[0])?.object.userData.id ?? null;
+  };
+  let ptr = null; const pinch = new Map();
+  const el = renderer.domElement;
+  el.addEventListener('pointerdown', e => {
+    el.setPointerCapture(e.pointerId); pinch.set(e.pointerId, [e.clientX, e.clientY]); host.focus({ preventScroll: true });
+    const id = pick(e), it = item(id), meta = e.metaKey || e.ctrlKey; ptr = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, id, kind: 'look', meta };
+    if (meta) { if (it) toggleSelect(id); return; }
+    if (S.view.mode === 'orbit' && it && !it.rug && !it.wall) {
+      setRay(e); ray.ray.intersectPlane(ground, hitP);
+      if (multi() && S.group.includes(id)) Object.assign(ptr, { kind: 'group', st: groupStart(), hx: hitP.x, hz: hitP.z, before: snapshot(), moved: false });
+      else { Object.assign(ptr, { kind: 'item', it, ox: it.x - hitP.x, oz: it.z - hitP.z, before: snapshot(), moved: false }); select(id); }
+    }
+  });
+  el.addEventListener('pointermove', e => {
+    if (pinch.has(e.pointerId)) {
+      const prev = pinch.get(e.pointerId);
+      if (pinch.size === 2 && S.view.mode === 'orbit') {
+        const pts = [...pinch.values()], other = pts.find(p => p !== prev), d0 = Math.hypot(prev[0] - other[0], prev[1] - other[1]), d1 = Math.hypot(e.clientX - other[0], e.clientY - other[1]);
+        orbit.zoomed = true; orbit.r = clamp(orbit.r * d0 / Math.max(d1, 1), 2.5, 13); pinch.set(e.pointerId, [e.clientX, e.clientY]); touch(); return;
+      }
+      pinch.set(e.pointerId, [e.clientX, e.clientY]);
+    }
+    if (!ptr) return; const dx = e.clientX - ptr.x, dy = e.clientY - ptr.y; ptr.x = e.clientX; ptr.y = e.clientY;
+    if (ptr.kind === 'group') {
+      setRay(e); if (ray.ray.intersectPlane(ground, hitP)) { groupMove(ptr.st, hitP.x - ptr.hx, hitP.z - ptr.hz); ptr.moved = true; markCustom(); renderAll(); V.sync(); }
+    } else if (ptr.kind === 'item') {
+      setRay(e); if (ray.ray.intersectPlane(ground, hitP)) { placeItem(ptr.it, hitP.x + ptr.ox, hitP.z + ptr.oz); ptr.moved = true; markCustom(); renderAll(); V.sync(); }
+    } else if (S.view.mode === 'walk') {
+      walk.yaw += dx * .0042; walk.pitch = clamp(walk.pitch + dy * .0036, -1.35, 1.35); tween = null; touch();
+    } else {
+      orbit.yaw -= dx * .006; orbit.pitch = clamp(orbit.pitch + dy * .005, .08, 1.5); touch();
+    }
+  });
+  const up = e => {
+    pinch.delete(e.pointerId); if (!ptr) return; const p = ptr; ptr = null;
+    if (p.kind === 'item') { if (p.moved) commit(p.before); return; }
+    if (p.kind === 'group') { if (p.moved) commit(p.before); else select(p.id); return; }
+    if (!p.meta && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < 5) select(p.id);
+  };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  el.addEventListener('dblclick', e => { if (e.metaKey || e.ctrlKey) return; const id = pick(e); if (id) renameItem(id); });
+  el.addEventListener('contextmenu', e => { if (e.ctrlKey) e.preventDefault(); });
+  el.addEventListener('wheel', e => { if (S.view.mode !== 'orbit') return; e.preventDefault(); orbit.zoomed = true; orbit.r = clamp(orbit.r * (1 + e.deltaY * .001), 2.5, 13); touch(); }, { passive: false });
+
+  // ---- keyboard walking
+  const keys = new Set(), WALK = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight'];
+  addEventListener('keydown', e => {
+    if (S.view.mode !== 'walk' || /INPUT|TEXTAREA/.test(document.activeElement?.tagName || '') || e.metaKey || e.ctrlKey) return;
+    if (WALK.includes(e.code)) { keys.add(e.code); if (e.code.startsWith('Arrow')) e.preventDefault(); }
+  });
+  addEventListener('keyup', e => requestAnimationFrame(() => requestAnimationFrame(() => keys.delete(e.code)))); // a quick tap still takes a step addEventListener('blur', () => keys.clear());
+  $('pad').addEventListener('pointerdown', e => { const k = e.target.dataset?.k; if (k) { keys.add(k); e.target.setPointerCapture(e.pointerId); e.preventDefault(); } });
+  ['pointerup', 'pointercancel'].forEach(t => $('pad').addEventListener(t, e => { const k = e.target.dataset?.k; if (k) keys.delete(k); }));
+
+  // ---- loop: draws only when something changed
+  let last = performance.now();
+  function frame(now) {
+    requestAnimationFrame(frame);
+    const dt = Math.min((now - last) / 1000, .06); last = now;
+    if (tween) {
+      tween.t = Math.min(1, (now - tween.t0) / 550); const k = tween.t * tween.t * (3 - 2 * tween.t), f = tween.from, g = tween.to;
+      for (const p of ['x', 'y', 'z', 'yaw', 'pitch']) walk[p] = f[p] + (g[p] - f[p]) * k;
+      if (tween.t >= 1) tween = null; touch();
+    }
+    if (S.view.mode === 'walk' && keys.size) {
+      const turnBy = (keys.has('ArrowLeft') ? 1 : 0) - (keys.has('ArrowRight') ? 1 : 0), tiltBy = (keys.has('ArrowUp') ? 1 : 0) - (keys.has('ArrowDown') ? 1 : 0);
+      if (turnBy || tiltBy) { tween = null; walk.yaw += turnBy * 1.7 * dt; walk.pitch = clamp(walk.pitch + tiltBy * 1.2 * dt, -1.35, 1.35); touch(); } // arrows look, W A S D walk, both at once
+      const f = (keys.has('KeyW') ? 1 : 0) - (keys.has('KeyS') ? 1 : 0), s = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
+      if (f || s) {
+        tween = null; const sp = (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 2.4 : 1.4) * dt / Math.hypot(f, s), sn = Math.sin(walk.yaw), cs = Math.cos(walk.yaw);
+        const mx = (-sn * f + cs * s) * sp, mz = (-cs * f - sn * s) * sp, stuck = blocked(walk.x, walk.z);
+        if (stuck || !blocked(walk.x + mx, walk.z)) walk.x += mx;
+        if (stuck || !blocked(walk.x, walk.z + mz)) walk.z += mz;
+        if (walk.spotY) { walk.spotY = false; walk.y = S.view.eye; }
+        touch();
+      }
+    }
+    if (dirty) { dirty = false; placeCamera(); renderer.render(scene, camera); }
+  }
+
+  V.rebuildShell = buildShell;
+  buildShell(); V.sync(); V.applyView(); V.resize();
+  if (S.view.mode === 'walk') V.setMode();
+  window.__rp.ready = true; window.__rp.walk = walk; window.__rp.orbit = orbit; window.__rp.touch = touch; window.__rp.renderer = renderer;
+  requestAnimationFrame(frame);
+}
+
+// ---------- Language: fixed text is captured once in English, everything else re-renders
+const fixedText = [], fixedAttrs = [];
+function captureStatic() {
+  const w = document.createTreeWalker(document.querySelector('.app').parentNode, NodeFilter.SHOW_TEXT);
+  while (w.nextNode()) { const n = w.currentNode, k = n.nodeValue.trim(), tag = n.parentNode.nodeName; if (k && tag !== 'SCRIPT' && tag !== 'STYLE' && tag !== 'TITLE' && ES[k]) fixedText.push([n, k]); }
+  document.querySelectorAll('[title],[aria-label],[placeholder]').forEach(el => ['title', 'aria-label', 'placeholder'].forEach(a => { const k = el.getAttribute(a); if (k && ES[k]) fixedAttrs.push([el, a, k]); }));
+}
+function applyLanguage() {
+  document.documentElement.lang = LANG;
+  fixedText.forEach(([n, k]) => { n.nodeValue = tr(k); });
+  fixedAttrs.forEach(([el, a, k]) => el.setAttribute(a, tr(k)));
+}
+$('langSeg').onclick = e => {
+  const b = e.target.closest('button'); if (!b || b.dataset.v === LANG) return;
+  LANG = b.dataset.v; try { localStorage.setItem(LANG_KEY, LANG); } catch {}
+  compare = null; applyLanguage(); renderAll(); renderCatalog(); renderSaved();
+};
+
+// ---------- Boot
+window.__rp = { S, analyse, LAYOUTS, useLayout };
+loadDraft();
+captureStatic();
+applyLanguage();
+renderCatalog();
+renderAll();
+renderSaved();
+connectStore();
+start3D();
+</script>
+</body>
+</html>
