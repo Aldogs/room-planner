@@ -43,7 +43,7 @@ It runs in the browser, so there's nothing to install. It works on a computer or
 
 ## Good to know
 
-- **Saving:** saved layouts are stored in a shared Firebase database. Anyone with the link can see, load and delete them. Unsaved edits stay in your own browser.
+- **Saving:** saved layouts are stored in a shared Firebase database. Anyone with the link can see, load and delete them. The page always opens on the Today layout, so save anything you want to keep.
 - **Analytics:** the page uses Google Analytics through Firebase to count visits.
 - **Internet:** the page needs an internet connection, because the 3D library and fonts load from the web.
 - **Built with:** a single `index.html` file using [three.js](https://threejs.org/) for the 3D view and [Firebase](https://firebase.google.com/) for shared layouts.

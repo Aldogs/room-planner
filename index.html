@@ -520,7 +520,7 @@ const ES = {
 "TV sits in front of the lower part of the window": "La TV queda frente a la parte baja de la ventana",
 "My edit": "Mi edición",
 "a saved layout": "una distribución guardada",
-"Your changes, starting from \"{a}\". The checks below update as you move things. Your edits stay after a reload. Click Today or a lettered layout to start over.": "Tus cambios, a partir de \"{a}\". Las alertas de abajo se actualizan al mover cosas. Tus cambios siguen ahí al recargar. Haz clic en Hoy o en una distribución con letra para empezar de nuevo.",
+"Your changes, starting from \"{a}\". The checks below update as you move things. Save under My layouts to keep this, because reloading opens Today again.": "Tus cambios, a partir de \"{a}\". Las alertas de abajo se actualizan al mover cosas. Guárdala en Mis distribuciones para conservarla, porque al recargar se abre Hoy de nuevo.",
 "Matrimonial, current head": "Matrimonial, cabecera actual",
 "Matrimonial, king head": "Matrimonial, cabecera king",
 "King bed, king head": "Cama king, cabecera king",
@@ -879,7 +879,7 @@ const withMirror = items => { // older saves used estimated sizes
 function loadDraft() {
   try {
     const d = JSON.parse(localStorage.getItem(DRAFT_KEY)); if (!d) return;
-    S.items = withMirror(d.items); S.layout = d.layout; Object.assign(S.room, d.room); Object.assign(S.view, d.view);
+    Object.assign(S.view, d.view); // only view settings come back: every visit opens on the Today layout
   } catch {}
 }
 function afterChange(sync3d) { renderAll(); if (sync3d) V.sync(); draft(); }
@@ -1070,7 +1070,7 @@ function renderAll() {
   $('tabs').innerHTML = tabs.join('');
   const L = LAYOUTS[S.layout];
   $('layName').textContent = tr(L ? L.title : 'My edit');
-  $('layText').textContent = L ? tr(L.text) : tr('Your changes, starting from "{a}". The checks below update as you move things. Your edits stay after a reload. Click Today or a lettered layout to start over.', { a: tr(LAYOUTS[S.fromLayout]?.tab || 'a saved layout') });
+  $('layText').textContent = L ? tr(L.text) : tr('Your changes, starting from "{a}". The checks below update as you move things. Save under My layouts to keep this, because reloading opens Today again.', { a: tr(LAYOUTS[S.fromLayout]?.tab || 'a saved layout') });
   $('layNotes').innerHTML = L ? L.notes.map(([k, t]) => `<li><i class="${k === 'ok' ? 'ok' : 'no'}">${k === 'ok' ? '✓' : '!'}</i><span>${tr(t)}</span></li>`).join('') : '';
   $('stFree').textContent = A.free.toFixed(1) + ' m²';
   $('stRoute').textContent = A.tightest >= 1.2 ? '90+ cm' : cm(A.tightest) + ' cm';
