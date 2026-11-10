@@ -167,6 +167,8 @@ input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
 .save { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
 .saved { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
 .saved li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+.save #authorName { grid-column: 1 / -1; }
+.saved .by { color: var(--muted); font-size: 12px; }
 .saved .open { text-align: left; padding: 5px 8px; border-radius: 7px; background: var(--raised); border: 1px solid var(--line); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .saved .open:hover { border-color: var(--muted); }
 .muted { color: var(--muted); font-size: 12.5px; }
@@ -352,6 +354,7 @@ dialog#ask p { margin: 0 0 16px; color: var(--muted); font-size: 13.5px; }
       <section class="panel card">
         <p class="eyebrow">My layouts</p>
         <form class="save" id="saveForm">
+          <input class="field" id="authorName" placeholder="Your name" aria-label="Your name" maxlength="30">
           <input class="field" id="saveName" placeholder="e.g. Desk by the window" aria-label="Layout name" maxlength="50">
           <button class="btn" type="submit">Save</button>
         </form>
@@ -564,6 +567,11 @@ const ES = {
 "Delete {n} objects?": "¿Eliminar {n} objetos?",
 "Are you sure you want to delete this object? You can bring it back with Undo.": "¿Seguro que quieres eliminar este objeto? Puedes recuperarlo con Deshacer.",
 "Are you sure you want to delete these objects? You can bring them back with Undo.": "¿Seguro que quieres eliminar estos objetos? Puedes recuperarlos con Deshacer.",
+"Your name": "Tu nombre",
+"by {a}": "de {a}",
+"Layouts save online, so everyone with the link can see them.": "Las distribuciones se guardan en línea, así que todos los que tengan el enlace pueden verlas.",
+"Shared layouts couldn't load, so layouts save in this browser for now.": "No se pudieron cargar las distribuciones compartidas, así que por ahora se guardan en este navegador.",
+"Saved \"{a}\" for everyone": "\"{a}\" guardado para todos",
 "Bring back": "Regresar",
 "Move out": "Sacar",
 "<kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> to walk, arrow keys or drag to look, <kbd>Shift</kbd> to hurry.": "<kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> para caminar, flechas o arrastrar para mirar, <kbd>Shift</kbd> para ir más rápido.",
@@ -1211,22 +1219,47 @@ addEventListener('keydown', e => {
   else if (e.key === 'Escape') select(null);
 });
 
-// ---------- Saved layouts: shared store when available, this browser otherwise
-let store = null;
+// ---------- Saved layouts: Claude's shared store inside Claude, Firebase on the public site, this browser otherwise
+// These identify the Firebase project; the database's security rules decide what visitors may do.
+const FIREBASE = {
+  apiKey: 'AIzaSyDDTiXWbGVEu_w3pfob0KN-MgRaIDPk9so',
+  authDomain: 'room-planner-44cdc.firebaseapp.com',
+  projectId: 'room-planner-44cdc',
+  storageBucket: 'room-planner-44cdc.firebasestorage.app',
+  messagingSenderId: '392895044180',
+  appId: '1:392895044180:web:1e0cf075f96172107a6bc1',
+  measurementId: 'G-W0QGT35ZBW',
+};
+const FB = 'https://www.gstatic.com/firebasejs/10.14.1/';
+const AUTHOR_KEY = 'room-planner-author';
+let store = null, storeKind = 'local', storeFailed = false;
 function renderSaved() {
-  $('saved').innerHTML = S.saved.map(s => `<li><button class="open" data-open="${esc(s.id)}">${esc(s.name)}</button><button class="btn danger" data-del="${esc(s.id)}" aria-label="${esc(tr('Delete {a}', { a: s.name }))}">${tr('Delete')}</button></li>`).join('');
-  $('savedNote').textContent = (S.saved.length ? '' : tr('Nothing saved yet. ')) + tr(store ? 'Layouts save to this page, so they follow you to other devices.' : 'Layouts save in this browser only.');
+  $('saved').innerHTML = S.saved.map(s => `<li><button class="open" data-open="${esc(s.id)}" title="${esc(s.name)}">${esc(s.name)}${s.author ? ` <span class="by">${esc(tr('by {a}', { a: s.author }))}</span>` : ''}</button><button class="btn danger" data-del="${esc(s.id)}" aria-label="${esc(tr('Delete {a}', { a: s.name }))}">${tr('Delete')}</button></li>`).join('');
+  const where = storeKind === 'firebase' ? 'Layouts save online, so everyone with the link can see them.' : storeKind === 'claude' ? 'Layouts save to this page, so they follow you to other devices.' : storeFailed ? "Shared layouts couldn't load, so layouts save in this browser for now." : 'Layouts save in this browser only.';
+  $('savedNote').textContent = (S.saved.length ? '' : tr('Nothing saved yet. ')) + tr(where);
 }
 function readLocalSaved() { try { return JSON.parse(localStorage.getItem(SAVED_KEY)) || []; } catch { return []; } }
 function writeLocalSaved() { try { localStorage.setItem(SAVED_KEY, JSON.stringify(S.saved)); } catch {} }
+const useSnapshot = q => { S.saved = q.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.at || 0) - (a.at || 0)); renderSaved(); };
+const goLocal = () => { store = null; storeKind = 'local'; storeFailed = true; S.saved = readLocalSaved(); renderSaved(); };
+async function connectFirebase() {
+  try {
+    const [{ initializeApp }, fs] = await Promise.all([import(FB + 'firebase-app.js'), import(FB + 'firebase-firestore.js')]);
+    const app = initializeApp(FIREBASE), col = fs.collection(fs.getFirestore(app, 'default'), 'layouts'); // the database was created with the ID "default"
+    store = { add: rec => fs.addDoc(col, rec), doc: id => ({ set: rec => fs.setDoc(fs.doc(col, id), rec), delete: () => fs.deleteDoc(fs.doc(col, id)) }) };
+    storeKind = 'firebase'; renderSaved();
+    fs.onSnapshot(col, useSnapshot, goLocal);
+    import(FB + 'firebase-analytics.js').then(({ getAnalytics, isSupported }) => isSupported().then(ok => ok && getAnalytics(app))).catch(() => {});
+  } catch { goLocal(); }
+}
 async function connectStore() {
   S.saved = readLocalSaved(); renderSaved();
+  try { $('authorName').value = localStorage.getItem(AUTHOR_KEY) || ''; } catch {}
+  if (!window.claude) return connectFirebase(); // the public site
   try {
-    const db = await window.claude?.use?.('db'); if (!db) return;
-    store = db.collection('layouts'); renderSaved();
-    store.onSnapshot(q => {
-      S.saved = q.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.at || 0) - (a.at || 0)); renderSaved();
-    }, () => { store = null; S.saved = readLocalSaved(); renderSaved(); });
+    const db = await window.claude.use?.('db'); if (!db) return;
+    store = db.collection('layouts'); storeKind = 'claude'; renderSaved();
+    store.onSnapshot(useSnapshot, goLocal);
   } catch { store = null; }
 }
 function ask(title, text, yes, danger, value) { // resolves true only on the yes button; Esc and No both cancel
@@ -1251,12 +1284,14 @@ $('askInput').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); an
 $('ask').addEventListener('close', () => { if (!$('ask').open) answer(false); }); // Esc counts as No
 $('saveForm').onsubmit = async e => {
   e.preventDefault(); const name = $('saveName').value.trim() || tr('Layout {n}', { n: S.saved.length + 1 });
-  const same = S.saved.find(x => x.name.trim().toLowerCase() === name.toLowerCase());
+  const author = $('authorName').value.trim().slice(0, 30);
+  try { localStorage.setItem(AUTHOR_KEY, author); } catch {}
+  const same = S.saved.find(x => x.name.trim().toLowerCase() === name.toLowerCase() && (x.author || '') === author);
   if (same && !await ask(tr('Replace "{a}"?', { a: same.name }), tr('A layout with this name already exists. Saving will replace it with what is on screen now.'), tr('Yes, replace'))) return;
-  const rec = { name, at: Date.now(), items: clone(S.items), room: clone(S.room) };
+  const rec = { name, author, at: Date.now(), items: clone(S.items), room: clone(S.room) };
   $('saveName').value = '';
   if (store) {
-    try { if (same) await store.doc(same.id).set(rec); else await store.add(rec); toast(tr('Saved "{a}" to this page', { a: name })); return; } catch { store = null; }
+    try { if (same) await store.doc(same.id).set(rec); else await store.add(rec); toast(tr(storeKind === 'firebase' ? 'Saved "{a}" for everyone' : 'Saved "{a}" to this page', { a: name })); return; } catch { store = null; }
   }
   S.saved = S.saved.filter(x => x !== same); S.saved.unshift({ id: same?.id || 'l' + Date.now().toString(36), ...rec }); writeLocalSaved(); renderSaved(); toast(tr('Saved "{a}" in this browser', { a: name }));
 };

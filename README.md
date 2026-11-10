@@ -18,7 +18,7 @@ It runs in the browser, so there's nothing to install. It works on a computer or
 - **Bed test:** try a matrimonial, queen or king frame with the current headboard, a king headboard or none. A grid compares every layout with every bed setup.
 - **Checks:** the planner flags furniture that collides, blocks the door, closet or window, or leaves a walkway under 60 cm. It also tracks how much of the window stays clear.
 - **Extras:** a monstera that sits on top of any furniture, and a mirror that hangs on any wall at any height. Both start outside the room.
-- **My layouts:** save arrangements by name and load them later.
+- **Shared layouts:** add your name, save an arrangement, and everyone with the link sees it straight away, on any browser or device.
 
 ## Controls
 
@@ -43,6 +43,7 @@ It runs in the browser, so there's nothing to install. It works on a computer or
 
 ## Good to know
 
-- **Saving:** saved layouts and unsaved edits stay in the browser you used. They don't sync between people or devices.
+- **Saving:** saved layouts are stored in a shared Firebase database. Anyone with the link can see, load and delete them. Unsaved edits stay in your own browser.
+- **Analytics:** the page uses Google Analytics through Firebase to count visits.
 - **Internet:** the page needs an internet connection, because the 3D library and fonts load from the web.
-- **Built with:** a single `index.html` file using [three.js](https://threejs.org/) for the 3D view.
+- **Built with:** a single `index.html` file using [three.js](https://threejs.org/) for the 3D view and [Firebase](https://firebase.google.com/) for shared layouts.
