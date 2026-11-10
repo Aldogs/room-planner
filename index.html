@@ -572,6 +572,9 @@ const ES = {
 "Layouts save online, so everyone with the link can see them.": "Las distribuciones se guardan en línea, así que todos los que tengan el enlace pueden verlas.",
 "Shared layouts couldn't load, so layouts save in this browser for now.": "No se pudieron cargar las distribuciones compartidas, así que por ahora se guardan en este navegador.",
 "Saved \"{a}\" for everyone": "\"{a}\" guardado para todos",
+"Reload and lose your changes?": "¿Recargar y perder tus cambios?",
+"This layout isn't saved. Save it under My layouts first if you want to keep it, because reloading opens Today again.": "Esta distribución no está guardada. Guárdala primero en Mis distribuciones si quieres conservarla, porque al recargar se abre Hoy de nuevo.",
+"Reload": "Recargar",
 "Bring back": "Regresar",
 "Move out": "Sacar",
 "<kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> to walk, arrow keys or drag to look, <kbd>Shift</kbd> to hurry.": "<kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> para caminar, flechas o arrastrar para mirar, <kbd>Shift</kbd> para ir más rápido.",
@@ -1208,6 +1211,17 @@ $('catalog').onclick = e => {
   const b = e.target.closest('[data-i]'); if (!b) return; const before = snapshot(), c = CATALOG[+b.dataset.i];
   const n = { ...clone(c), id: 'n' + Date.now().toString(36), x: 1.35, z: 1, rot: 0 }; S.items.push(n); S.sel = n.id; markCustom(); commit(before); toast(tr('{a} added. Drag it into place.', { a: tr(c.name) }));
 };
+// ---------- Unsaved changes: warn before a reload throws them away
+let savedKey = null, leaving = false;
+const itemsKey = () => JSON.stringify(S.items.map(i => [i.id, i.x, i.z, i.rot, i.w, i.d, i.h, i.y, i.name]));
+const unsaved = () => S.layout === 'custom' && itemsKey() !== savedKey;
+addEventListener('beforeunload', e => { if (!leaving && unsaved()) { e.preventDefault(); e.returnValue = ''; } }); // the browser shows its own wording here
+addEventListener('keydown', async e => {
+  const reload = ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'r') || e.key === 'F5';
+  if (!reload || !unsaved() || $('ask').open) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  if (await ask(tr('Reload and lose your changes?'), tr("This layout isn't saved. Save it under My layouts first if you want to keep it, because reloading opens Today again."), tr('Reload'), true)) { leaving = true; location.reload(); }
+});
 addEventListener('keydown', e => {
   const typing = /INPUT|TEXTAREA/.test(document.activeElement?.tagName || '') && document.activeElement.type !== 'range' && document.activeElement.type !== 'checkbox';
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !typing) { e.preventDefault(); e.shiftKey ? travel(S.future, S.past) : travel(S.past, S.future); return; }
@@ -1215,7 +1229,7 @@ addEventListener('keydown', e => {
   const it = item(S.sel); if (!it) return;
   const step = e.shiftKey ? .01 : .05, m = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
   if (m) { e.preventDefault(); editAll(() => selected().forEach(id => { const i = item(id); i.x = +(i.x + m[0]).toFixed(3); i.z = +(i.z + m[1]).toFixed(3); })); }
-  else if (e.key.toLowerCase() === 'r') turnPick(e.shiftKey ? 45 : 90);
+  else if (e.key.toLowerCase() === 'r' && !e.metaKey && !e.ctrlKey) turnPick(e.shiftKey ? 45 : 90);
   else if (e.key === 'Escape') select(null);
 });
 
@@ -1291,15 +1305,15 @@ $('saveForm').onsubmit = async e => {
   const rec = { name, author, at: Date.now(), items: clone(S.items), room: clone(S.room) };
   $('saveName').value = '';
   if (store) {
-    try { if (same) await store.doc(same.id).set(rec); else await store.add(rec); toast(tr(storeKind === 'firebase' ? 'Saved "{a}" for everyone' : 'Saved "{a}" to this page', { a: name })); return; } catch { store = null; }
+    try { if (same) await store.doc(same.id).set(rec); else await store.add(rec); savedKey = itemsKey(); toast(tr(storeKind === 'firebase' ? 'Saved "{a}" for everyone' : 'Saved "{a}" to this page', { a: name })); return; } catch { store = null; }
   }
-  S.saved = S.saved.filter(x => x !== same); S.saved.unshift({ id: same?.id || 'l' + Date.now().toString(36), ...rec }); writeLocalSaved(); renderSaved(); toast(tr('Saved "{a}" in this browser', { a: name }));
+  S.saved = S.saved.filter(x => x !== same); S.saved.unshift({ id: same?.id || 'l' + Date.now().toString(36), ...rec }); writeLocalSaved(); renderSaved(); savedKey = itemsKey(); toast(tr('Saved "{a}" in this browser', { a: name }));
 };
 $('saved').onclick = async e => {
   const open = e.target.dataset?.open, del = e.target.dataset?.del;
   if (open) {
     const s = S.saved.find(x => x.id === open); if (!s) return; const b = snapshot();
-    S.items = withMirror(clone(s.items)); Object.assign(S.room, s.room); S.fromLayout = null; S.layout = 'custom'; S.sel = null; S.past.push(b); S.future = []; afterChange(true); V.rebuildShell();
+    S.items = withMirror(clone(s.items)); Object.assign(S.room, s.room); S.fromLayout = null; S.layout = 'custom'; S.sel = null; S.past.push(b); S.future = []; afterChange(true); savedKey = itemsKey(); V.rebuildShell();
   } else if (del) {
     const gone = S.saved.find(x => x.id === del); if (!gone) return;
     if (!await ask(tr('Delete "{a}"?', { a: gone.name }), tr("Are you sure you want to delete this layout? This can't be undone."), tr('Yes, delete'), true)) return;
